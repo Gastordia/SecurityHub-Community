@@ -1,0 +1,95 @@
+services:
+
+  nginx:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile_frontend
+    volumes:
+      - static_volume:/home/securityhub/securityhub/securityhub/static/
+      - media_volume:/home/securityhub/securityhub/securityhub/media/
+    ports:
+      - 3000:80
+      - 8443:443
+    restart: unless-stopped
+    depends_on:
+      securityhub:
+        condition: service_healthy
+    networks:
+      - securityhub
+
+  postgres:
+    image: "postgres:16-alpine"
+    restart: always
+    env_file: ".env"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGUSER: ${POSTGRES_USER}
+    networks:
+      - securityhub
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -h localhost -U \"${POSTGRES_USER}\" -d \"${POSTGRES_DB}\"" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  securityhub:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile_API
+    env_file: ".env"
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGUSER: ${POSTGRES_USER}
+      WHITELIST_IP: ${WHITELIST_IP}
+      ALLOWED_HOST: ${ALLOWED_HOST}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      USE_S3: ${USE_S3}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_STORAGE_BUCKET_NAME: ${AWS_STORAGE_BUCKET_NAME}
+      AWS_S3_REGION_NAME: ${AWS_S3_REGION_NAME}
+      AWS_S3_CUSTOM_DOMAIN: ${AWS_S3_CUSTOM_DOMAIN}
+      AWS_S3_ENDPOINT_URL: ${AWS_S3_ENDPOINT_URL}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_USE_TLS: ${EMAIL_USE_TLS}
+      USE_EMAIL: ${USE_EMAIL}
+      EMAIL_HOST_USER: ${EMAIL_HOST_USER}
+      EMAIL_HOST_PASSWORD: ${EMAIL_HOST_PASSWORD}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      USE_DOCKER: "True"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - api_data:/home/securityhub/.securityhub
+      - static_volume:/home/securityhub/securityhub/securityhub/static/
+      - media_volume:/home/securityhub/securityhub/securityhub/media/
+    networks:
+      - securityhub
+    healthcheck:
+      test: [ "CMD-SHELL", "curl --fail http://localhost:8000/api/config/ping/ || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  securityhub:
+
+
+volumes:
+  static_volume:
+  media_volume:
+  postgres_data:
+  api_data:

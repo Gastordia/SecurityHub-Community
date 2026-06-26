@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecurityHub Vulnerability Endpoints Documentation</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1><i class="fas fa-shield-alt"></i> SecurityHub Docs</h1>
+                <button class="toggle-sidebar" id="toggleSidebar">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search endpoints...">
+            </div>
+            <nav class="nav-menu" id="navMenu">
+                <div class="nav-section">
+                    <h3>Endpoints</h3>
+                    <ul id="endpointList"></ul>
+                </div>
+                <div class="nav-section">
+                    <h3>Assessment</h3>
+                    <ul>
+                        <li><a href="#assessment" data-section="assessment">Functionality Assessment</a></li>
+                    </ul>
+                </div>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Endpoints</span>
+                        <span class="stat-value" id="totalEndpoints">63</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Fully Functional</span>
+                        <span class="stat-value functional" id="functionalCount">25</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">With Issues</span>
+                        <span class="stat-value warning" id="issuesCount">30</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content" id="mainContent">
+            <div class="content-header">
+                <h2 id="pageTitle">Vulnerability Endpoints Documentation</h2>
+                <div class="view-controls">
+                    <button class="btn-icon" id="toggleDarkMode" title="Toggle Dark Mode">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <button class="btn-icon" id="printBtn" title="Print">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="content-body" id="contentBody">
+                <!-- Content will be loaded here -->
+            </div>
+        </main>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

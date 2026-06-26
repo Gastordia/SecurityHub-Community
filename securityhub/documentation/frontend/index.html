@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecurityHub API Reference</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔗 SecurityHub API Reference</h1>
+            <p class="subtitle">Complete API endpoint documentation for frontend developers</p>
+            <div class="header-info">
+                <span class="badge">Version: <span id="version">1.0.0</span></span>
+                <span class="badge">Base URL: <span id="baseUrl">/api</span></span>
+                <span class="badge">Updated: <span id="dateUpdated">2024-11-07</span></span>
+            </div>
+        </header>
+
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search endpoints, methods, descriptions...">
+            <select id="sectionFilter">
+                <option value="">All Sections</option>
+            </select>
+            <select id="methodFilter">
+                <option value="">All Methods</option>
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PATCH">PATCH</option>
+                <option value="DELETE">DELETE</option>
+            </select>
+            <button id="clearFilters">Clear Filters</button>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value" id="totalEndpoints">0</div>
+                <div class="stat-label">Total Endpoints</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalSections">0</div>
+                <div class="stat-label">Sections</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="visibleEndpoints">0</div>
+                <div class="stat-label">Visible</div>
+            </div>
+        </div>
+
+        <div class="sections-container" id="sectionsContainer">
+            <!-- Sections will be dynamically loaded here -->
+        </div>
+
+        <footer>
+            <p>For interactive API exploration, visit <a href="/api/docs/" target="_blank">Swagger UI</a> or <a href="/api/redoc/" target="_blank">ReDoc</a></p>
+        </footer>
+    </div>
+
+    <!-- Embedded API data - works with file:// protocol -->
+    <script src="api-data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

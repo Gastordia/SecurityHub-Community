@@ -1,0 +1,463 @@
+# ============================================================================
+# SecurityHub .gitignore
+# ============================================================================
+
+# ============================================================================
+# Environment and Secrets
+# ============================================================================
+.env
+.env.*
+!.env.example
+env.docker
+securityhub/.env
+*.key
+*.pem
+*.crt
+*.cert
+!*.example
+
+# ============================================================================
+# Python
+# ============================================================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+**/*.pyc
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+win/
+
+# Poetry
+.poetry/
+
+# Pipenv
+Pipfile.lock
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Django
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+securityhub/debug.txt
+securityhub/debug.log
+
+# Static and media (handled by volumes in Docker)
+securityhub/static/admin/**
+securityhub/static/ckeditor/**
+securityhub/static/rest_framework/**
+staticfiles/
+static_root/
+media_root/
+media/
+
+# Exception: Allow frontend code in lib directory
+!frontend/src/lib/
+
+
+# ============================================================================
+# Node.js / Frontend
+# ============================================================================
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/.nuxt/
+frontend/.cache/
+frontend/.parcel-cache/
+frontend/.svelte-kit/
+frontend/.npm/
+frontend/.yarn/
+frontend/.pnpm-store/
+frontend/coverage/
+frontend/.nyc_output/
+frontend/test-results/
+frontend/playwright-report/
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Keep package-lock.json and poetry.lock
+yarn.lock
+pnpm-lock.yaml
+
+# ============================================================================
+# Documentation and Analysis Files (Noise Files)
+# ============================================================================
+# Ignore most markdown files except essential documentation
+*.md
+!README.md
+!LICENSE.md
+!CONTRIBUTING.md
+!SECURITY.md
+!CODE_OF_CONDUCT.md
+
+# Analysis, summary, and report markdown files
+*_ANALYSIS*.md
+*_SUMMARY*.md
+*_COMPLETE*.md
+*_STATUS*.md
+*_GUIDE*.md
+*_PLAN*.md
+*_FIXES*.md
+*_REPORT*.md
+*_RESULTS*.md
+*_MIGRATION*.md
+*_UPDATE*.md
+*_REBUILD*.md
+*_COMPATIBILITY*.md
+*_READINESS*.md
+*_WORKFLOWS*.md
+*_UPDATED*.md
+*_NEXT_STEPS*.md
+*_PROGRESS*.md
+*_ROADMAP*.md
+*_CHANGELOG*.md
+*_TODO*.md
+*_CHECKLIST*.md
+
+# ============================================================================
+# Test Results and Output Files
+# ============================================================================
+*_test_results.json
+*_test_results.txt
+*_results.json
+*_results.txt
+*_results_summary.txt
+*_results_summary.json
+test_results/
+test-results/
+test_output/
+test-output/
+securityhub/tests/*_test_results.*
+securityhub/tests/*_results.*
+securityhub/tests/*_summary.*
+securityhub/tests/cvetest.txt
+securityhub/tests/intelligence_api_results_summary.txt
+securityhub/tests/threat_intelligence_test_results.*
+
+# ============================================================================
+# Reference, Inventory, and Analysis Files
+# ============================================================================
+*_reference*.txt
+*_reference*.json
+*_inventory*.json
+*_inventory*.txt
+*_report.txt
+*_report.json
+parser_field_inventory.json
+parser_analysis_report.json
+securityhub_reference_report.txt
+
+# Analysis scripts (temporary)
+analyze_*.py
+count_*.py
+*_analyzer.py
+*_counter.py
+# KEEP: Management commands (needed for setup)
+!**/management/commands/*.py
+!**/management/commands/__init__.py
+!**/management/__init__.py
+
+# ============================================================================
+# Log Files
+# ============================================================================
+logs/
+*.log
+*.log.*
+*.log.[0-9]*
+*.log.[0-9]*.[0-9]*
+debug.log
+debug.log.*
+securityhub/debug.log*
+securityhub/tests/debug.log*
+
+# ============================================================================
+# Database Files
+# ============================================================================
+# Ignore database files but KEEP migrations
+*.sql
+*.dump
+*.sqlite
+*.sqlite3
+*.db
+# KEEP: Migration files (critical for setup)
+!**/migrations/**/*.py
+!**/migrations/**/*.sql
+!**/migrations/__init__.py
+# Ignore: Database dumps and exports
+securityhub/securityhub.sql
+securityhub/sqlite_dump.sql
+
+# ============================================================================
+# Backup and Temporary Files
+# ============================================================================
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+*.swp
+*.swo
+*~
+securityhub/backup/
+backup/
+backups/
+tmp/
+temp/
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# ============================================================================
+# IDE and Editor Files
+# ============================================================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+.project
+.classpath
+.settings/
+*.swp
+*.swo
+
+# ============================================================================
+# OS Files
+# ============================================================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+.AppleDouble
+.LSOverride
+Icon
+$RECYCLE.BIN/
+*.lnk
+.fuse_hidden*
+.directory
+.Trash-*
+
+# ============================================================================
+# Project-Specific Files
+# ============================================================================
+# Temporary project files
+TODO/
+tools/temp/
+utils/temp/
+run.sh
+securityhub/nohup.out
+securityhub/helloword.docx
+securityhub/report-tester.docx
+securityhub/project/report.docx
+securityhub/templates/.~lock.report.docx#
+Features.txt
+
+# Media files (POC images)
+securityhub/media/poc/**
+
+# Keep lib directories
+!securityhub/lib/
+
+# ============================================================================
+# CI/CD and Build Tools
+# ============================================================================
+.sonar/
+sonar-project.properties
+.scannerwork/
+.github/workflows/*.yml.bak
+.github/workflows/*.yml.old
+
+# ============================================================================
+# Docker
+# ============================================================================
+docker-compose.override.yml
+# Keep: docker-compose.yml, docker-compose.override.yml.example
+
+# ============================================================================
+# Jupyter Notebooks
+# ============================================================================
+.ipynb_checkpoints/
+*.ipynb
+
+# ============================================================================
+# Type Checkers and Linters
+# ============================================================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+.ruff_cache/
+
+# ============================================================================
+# Profiling and Performance
+# ============================================================================
+*.prof
+*.lprof
+*.lprof.*
+
+# ============================================================================
+# Compiled Extensions
+# ============================================================================
+*.so
+*.dylib
+*.dll
+
+# ============================================================================
+# Sphinx Documentation
+# ============================================================================
+docs/_build/
+/site
+
+# ============================================================================
+# IPython
+# ============================================================================
+profile_default/
+ipython_config.py
+
+# ============================================================================
+# Jupyter
+# ============================================================================
+.ipynb_checkpoints
+
+# ============================================================================
+# pyenv
+# ============================================================================
+.python-version
+
+# ============================================================================
+# Rope
+# ============================================================================
+.ropeproject
+
+# ============================================================================
+# Spyder
+# ============================================================================
+.spyderproject
+.spyproject
+
+# ============================================================================
+# Scrapy
+# ============================================================================
+.scrapy
+
+# ============================================================================
+# PyBuilder
+# ============================================================================
+.pybuilder/
+target/
+
+# ============================================================================
+# SageMath
+# ============================================================================
+*.sage.py
+
+# ============================================================================
+# Web Assets
+# ============================================================================
+.webassets-cache
+
+# ============================================================================
+# Instance
+# ============================================================================
+instance/
+
+# ============================================================================
+# PEP 582
+# ============================================================================
+__pypackages__/
+
+# ============================================================================
+# PDM
+# ============================================================================
+.pdm.toml
+
+# ============================================================================
+# End of .gitignore
+# ============================================================================
+
+# Optional standalone subproject (not used by main app)
+securityhub/security-reports-api/
+hollyshit
+hollyshitcd
+.claude/
+graphify-out/
+website/
+
+# ── AI coding tool configs (local only) ──────────────────────────────────────
+.cursor/
+.codex
+.all-contributorsrc
+.claude/
+graphify-out/

@@ -1,0 +1,433 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Scanner File Upload - SecurityHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .parser-upload-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .upload-section {
+        background: #f8f9fa;
+        border: 2px dashed #dee2e6;
+        border-radius: 8px;
+        padding: 40px;
+        text-align: center;
+        margin-bottom: 30px;
+        transition: border-color 0.3s ease;
+    }
+    
+    .upload-section:hover {
+        border-color: #007bff;
+    }
+    
+    .upload-section.dragover {
+        border-color: #28a745;
+        background-color: #d4edda;
+    }
+    
+    .file-input {
+        display: none;
+    }
+    
+    .upload-btn {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        margin: 10px;
+    }
+    
+    .upload-btn:hover {
+        background: #0056b3;
+    }
+    
+    .scanner-select {
+        width: 100%;
+        max-width: 300px;
+        padding: 8px 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        margin: 10px 0;
+    }
+    
+    .status-message {
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+    }
+    
+    .status-success {
+        background-color: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+    }
+    
+    .status-error {
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+    }
+    
+    .status-info {
+        background-color: #d1ecf1;
+        border: 1px solid #bee5eb;
+        color: #0c5460;
+    }
+    
+    .findings-preview {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    
+    .finding-item {
+        border-bottom: 1px solid #eee;
+        padding: 15px 0;
+    }
+    
+    .finding-item:last-child {
+        border-bottom: none;
+    }
+    
+    .severity-badge {
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+    
+    .severity-critical { background-color: #dc3545; color: white; }
+    .severity-high { background-color: #fd7e14; color: white; }
+    .severity-medium { background-color: #ffc107; color: black; }
+    .severity-low { background-color: #28a745; color: white; }
+    .severity-info { background-color: #17a2b8; color: white; }
+    
+    .supported-scanners {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .scanner-card {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+    }
+    
+    .scanner-name {
+        font-weight: bold;
+        color: #007bff;
+        margin-bottom: 5px;
+    }
+    
+    .scanner-formats {
+        font-size: 12px;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="parser-upload-container">
+    <h2>Scanner File Upload</h2>
+    <p class="text-muted">Upload vulnerability scan results from various security scanners</p>
+    
+    <!-- Status Messages -->
+    <div id="status-message" class="status-message" style="display: none;"></div>
+    
+    <!-- Upload Section -->
+    <div class="upload-section" id="upload-section">
+        <h4>📁 Upload Scanner File</h4>
+        <p>Drag and drop your scanner file here or click to browse</p>
+        
+        <input type="file" id="file-input" class="file-input" accept=".xml,.json,.csv,.nessus">
+        <button class="upload-btn" onclick="document.getElementById('file-input').click()">
+            Choose File
+        </button>
+        
+        <div style="margin-top: 20px;">
+            <label for="scanner-select">Scanner Type (Auto-detected if left empty):</label>
+            <select id="scanner-select" class="scanner-select">
+                <option value="">Auto-detect</option>
+            </select>
+        </div>
+        
+        <button class="upload-btn" onclick="uploadFile()" id="upload-btn" disabled>
+            Upload and Parse
+        </button>
+    </div>
+    
+    <!-- Findings Preview -->
+    <div id="findings-preview" class="findings-preview" style="display: none;">
+        <h4>📊 Parsed Findings</h4>
+        <div id="findings-content"></div>
+    </div>
+    
+    <!-- Supported Scanners -->
+    <div id="supported-scanners" class="supported-scanners"></div>
+</div>
+
+<script>
+let currentFile = null;
+let detectedScanner = null;
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    loadSupportedScanners();
+    setupDragAndDrop();
+    setupFileInput();
+});
+
+// Load supported scanners
+async function loadSupportedScanners() {
+    try {
+        const response = await fetch('/project/parser/scanners/', {
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        const data = await response.json();
+        
+        if (data.success) {
+            displaySupportedScanners(data.scanners);
+            populateScannerSelect(data.scanners);
+        }
+    } catch (error) {
+        showStatus('Error loading supported scanners', 'error');
+    }
+}
+
+// Display supported scanners
+function displaySupportedScanners(scanners) {
+    const container = document.getElementById('supported-scanners');
+    container.innerHTML = '<h4>🔧 Supported Scanners</h4>';
+    
+    Object.entries(scanners).forEach(([key, scanner]) => {
+        const card = document.createElement('div');
+        card.className = 'scanner-card';
+        card.innerHTML = `
+            <div class="scanner-name">${scanner.name}</div>
+            <div class="scanner-formats">Formats: ${scanner.supported_formats.join(', ')}</div>
+            <small>${scanner.description}</small>
+        `;
+        container.appendChild(card);
+    });
+}
+
+// Populate scanner select dropdown
+function populateScannerSelect(scanners) {
+    const select = document.getElementById('scanner-select');
+    
+    Object.entries(scanners).forEach(([key, scanner]) => {
+        const option = document.createElement('option');
+        option.value = key;
+        option.textContent = `${scanner.name} (${scanner.supported_formats.join(', ')})`;
+        select.appendChild(option);
+    });
+}
+
+// Setup drag and drop
+function setupDragAndDrop() {
+    const uploadSection = document.getElementById('upload-section');
+    
+    uploadSection.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        uploadSection.classList.add('dragover');
+    });
+    
+    uploadSection.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        uploadSection.classList.remove('dragover');
+    });
+    
+    uploadSection.addEventListener('drop', function(e) {
+        e.preventDefault();
+        uploadSection.classList.remove('dragover');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+    });
+}
+
+// Setup file input
+function setupFileInput() {
+    const fileInput = document.getElementById('file-input');
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+}
+
+// Handle file selection
+function handleFileSelect(file) {
+    currentFile = file;
+    detectedScanner = null;
+    
+    showStatus(`File selected: ${file.name}`, 'info');
+    
+    // Auto-detect scanner
+    detectScanner(file);
+    
+    // Enable upload button
+    document.getElementById('upload-btn').disabled = false;
+}
+
+// Detect scanner type
+async function detectScanner(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+        const response = await fetch('/project/parser/detect/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            detectedScanner = data.detected_scanner;
+            document.getElementById('scanner-select').value = detectedScanner;
+            showStatus(`Detected scanner: ${data.scanner_info.name}`, 'success');
+        } else {
+            showStatus('Could not auto-detect scanner. Please select manually.', 'info');
+        }
+    } catch (error) {
+        showStatus('Error detecting scanner', 'error');
+    }
+}
+
+// Upload and parse file
+async function uploadFile() {
+    if (!currentFile) {
+        showStatus('Please select a file first', 'error');
+        return;
+    }
+    
+    const scannerType = document.getElementById('scanner-select').value;
+    const projectId = getProjectId(); // You'll need to implement this based on your URL structure
+    
+    if (!projectId) {
+        showStatus('Project ID not found. Please navigate to a project first.', 'error');
+        return;
+    }
+    
+    showStatus('Uploading and parsing file...', 'info');
+    
+    const formData = new FormData();
+    formData.append('file', currentFile);
+    formData.append('project_id', projectId);
+    if (scannerType) {
+        formData.append('scanner_type', scannerType);
+    }
+    
+    try {
+        const response = await fetch('/project/parser/upload/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showStatus(`Successfully parsed ${data.findings_count} findings from ${data.scanner_name}`, 'success');
+            displayFindings(data.findings);
+        } else {
+            showStatus(`Error: ${data.error}`, 'error');
+        }
+    } catch (error) {
+        showStatus('Error uploading file', 'error');
+    }
+}
+
+// Display findings
+function displayFindings(findings) {
+    const container = document.getElementById('findings-content');
+    const preview = document.getElementById('findings-preview');
+    
+    container.innerHTML = '';
+    
+    findings.forEach((finding, index) => {
+        const findingDiv = document.createElement('div');
+        findingDiv.className = 'finding-item';
+        
+        const severityClass = `severity-${finding.severity.toLowerCase()}`;
+        
+        findingDiv.innerHTML = `
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h5>${finding.title}</h5>
+                <span class="severity-badge ${severityClass}">${finding.severity}</span>
+            </div>
+            <p><strong>Affected Asset:</strong> ${finding.affected_asset || 'N/A'}</p>
+            <p><strong>Description:</strong> ${finding.description.substring(0, 200)}${finding.description.length > 200 ? '...' : ''}</p>
+            ${finding.cvss_score ? `<p><strong>CVSS Score:</strong> ${finding.cvss_score}</p>` : ''}
+            ${finding.cwe_ids && finding.cwe_ids.length > 0 ? `<p><strong>CWE:</strong> ${finding.cwe_ids.join(', ')}</p>` : ''}
+        `;
+        
+        container.appendChild(findingDiv);
+    });
+    
+    preview.style.display = 'block';
+}
+
+// Show status message
+function showStatus(message, type) {
+    const statusDiv = document.getElementById('status-message');
+    statusDiv.textContent = message;
+    statusDiv.className = `status-message status-${type}`;
+    statusDiv.style.display = 'block';
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        statusDiv.style.display = 'none';
+    }, 5000);
+}
+
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Get project ID from URL (implement based on your URL structure)
+function getProjectId() {
+    // This is a placeholder - implement based on your URL structure
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('project_id') || null;
+}
+</script>
+{% endblock %}
+
+

@@ -1,0 +1,120 @@
+# syntax=docker/dockerfile:1.4
+
+# ============================================================================
+# Stage 1: Runtime base — only what the app needs to RUN (no compiler)
+# ============================================================================
+FROM ubuntu:22.04 AS base
+
+LABEL \
+    name="SecurityHub" \
+    author="SecurityHub Community" \
+    maintainer="SecurityHub Community" \
+    description="SecurityHub Community Edition - Django API" \
+    version="2.0"
+
+ENV TZ=UTC \
+    DEBIAN_FRONTEND=noninteractive \
+    SH_USER=securityhub \
+    USER_ID=9901 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONFAULTHANDLER=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# Runtime-only packages — no build-essential, python3-dev, or *-dev headers
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+        tzdata \
+        locales \
+        sqlite3 \
+        fontconfig-config \
+        libjpeg-turbo8 \
+        libxrender1 \
+        libfontconfig1 \
+        libxext6 \
+        fontconfig \
+        xfonts-75dpi \
+        xfonts-base \
+        python3 \
+        curl \
+        libpango-1.0-0 \
+        libharfbuzz0b \
+        libpangoft2-1.0-0 \
+        postgresql-client \
+        libpq5 \
+        libmagic1 \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+RUN groupadd --gid $USER_ID $SH_USER && \
+    useradd $SH_USER \
+        --uid $USER_ID \
+        --gid $SH_USER \
+        --shell /bin/bash \
+        --create-home && \
+    mkdir -p /home/$SH_USER/securityhub && \
+    chown -R $SH_USER:$SH_USER /home/$SH_USER
+
+# ============================================================================
+# Stage 2: Builder — build toolchain layered on top of the runtime base
+# ============================================================================
+FROM base AS builder
+
+# Build-only deps in their own layer — never copied to the production image
+RUN apt-get update -qq && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        python3-dev \
+        python3-pip \
+        libpq-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /home/$SH_USER/securityhub
+
+RUN python3 -m pip install --upgrade --no-cache-dir pip setuptools wheel packaging && \
+    pip install --no-cache-dir poetry==1.8.3
+
+RUN poetry config virtualenvs.create false && \
+    poetry config cache-dir /tmp/poetry-cache
+
+COPY --chown=$SH_USER:$SH_USER pyproject.toml poetry.lock ./
+
+RUN --mount=type=cache,target=/tmp/poetry-cache \
+    --mount=type=cache,target=/root/.cache/pip \
+    PIP_NO_BUILD_ISOLATION=1 poetry install --no-root --no-interaction --no-ansi --only=main
+
+# ============================================================================
+# Stage 3: Production — lean runtime image, no compiler, no headers
+# ============================================================================
+FROM base AS production
+
+WORKDIR /home/$SH_USER/securityhub
+
+# Pull only the installed Python packages from the builder — not gcc etc.
+COPY --from=builder /usr/local/lib/python3.10/dist-packages /usr/local/lib/python3.10/dist-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+
+COPY --chown=$SH_USER:$SH_USER securityhub ./securityhub
+COPY --chown=$SH_USER:$SH_USER scripts ./scripts
+
+RUN chmod +x ./scripts/backend.sh && \
+    mkdir -p /home/$SH_USER/securityhub/securityhub/static \
+             /home/$SH_USER/securityhub/securityhub/media \
+             /home/$SH_USER/.securityhub \
+    && chown -R $SH_USER:$SH_USER /home/$SH_USER/securityhub \
+                                   /home/$SH_USER/.securityhub
+
+# Named volume for persistent data is initialised from the image at first start,
+# inheriting the securityhub ownership set above.
+USER $SH_USER
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl --fail http://localhost:8000/api/config/ping/ || exit 1
+
+ENTRYPOINT ["bash", "/home/securityhub/securityhub/scripts/backend.sh"]

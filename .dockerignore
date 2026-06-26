@@ -1,0 +1,182 @@
+# ============================================================================
+# Environment and Secrets
+# ============================================================================
+# CRITICAL: Exclude all .env files to prevent local config contamination
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+securityhub/.env
+frontend/.env
+env.docker
+*.key
+*.pem
+*.crt
+*.cert
+
+# ============================================================================
+# Python
+# ============================================================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+**/*.pyc
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+*.log
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# Virtual environments
+.venv
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# ============================================================================
+# Node.js / Frontend
+# ============================================================================
+frontend/node_modules/
+frontend/.vite/
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/.nuxt/
+frontend/.cache/
+frontend/.parcel-cache/
+frontend/.svelte-kit/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ============================================================================
+# IDE and Editor
+# ============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# ============================================================================
+# Git
+# ============================================================================
+.git/
+.gitignore
+.gitattributes
+
+# ============================================================================
+# Documentation
+# ============================================================================
+*.md
+!README.md
+docs/
+*.txt
+!requirements.txt
+
+# ============================================================================
+# CI/CD
+# ============================================================================
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# ============================================================================
+# Database
+# ============================================================================
+*.db
+*.sqlite
+*.sqlite3
+*.sql
+!**/migrations/  # Keep migrations for consistent deployments
+
+# ============================================================================
+# Media and Static (handled by volumes)
+# ============================================================================
+securityhub/static/
+securityhub/media/
+staticfiles/
+media/
+
+# ============================================================================
+# Logs and Temporary Files
+# ============================================================================
+logs/
+*.log
+*.log.*
+tmp/
+temp/
+*.tmp
+
+# ============================================================================
+# Other
+# ============================================================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+/site
+*.bak
+*.backup
+*.orig

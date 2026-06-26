@@ -1,0 +1,27 @@
+# syntax=docker/dockerfile:1.4
+# ============================================================================
+# Dev image — source is bind-mounted at runtime.
+# Hot-reload via Vite dev server.  Do NOT use in production.
+# ============================================================================
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install build tools (needed by some native addons)
+RUN apk add --no-cache python3 make g++
+
+# Copy dep files and install — this layer is cached unless package.json changes.
+# The actual source code is NOT copied; it arrives via volume mount.
+COPY frontend/package.json frontend/package-lock.json* ./
+
+RUN --mount=type=cache,target=/root/.npm \
+    if [ -f package-lock.json ]; then \
+        npm ci --prefer-offline --no-audit || npm install --prefer-offline --no-audit; \
+    else \
+        npm install --prefer-offline --no-audit; \
+    fi
+
+EXPOSE 5173
+
+# npm start = "vite --host --port 5173"
+CMD ["npm", "start"]

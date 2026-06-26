@@ -1,0 +1,54 @@
+# docker-compose.override.yml.example
+# 
+# Copy this file to docker-compose.override.yml for local development
+# This file allows you to override settings for local development without
+# modifying the main docker-compose.yml file
+#
+# Usage:
+#   cp docker-compose.override.yml.example docker-compose.override.yml
+#   # Edit docker-compose.override.yml with your local settings
+#   docker-compose up
+
+version: '3.8'
+
+services:
+  securityhub:
+    # Override environment variables for local development
+    environment:
+      DEBUG: "True"
+      # Add any local development overrides here
+
+    # Mount local code for hot-reload (if using development server)
+    volumes:
+      - ./securityhub:/home/securityhub/securityhub/securityhub:ro  # Read-only mount
+      # Uncomment below for write access (not recommended for production)
+      # - ./securityhub:/home/securityhub/securityhub/securityhub
+
+    # Override command for development (if needed)
+    # command: python manage.py runserver 0.0.0.0:8000
+
+    # Expose additional ports for debugging
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # For Python debugger (optional)
+
+  postgres:
+    # Override PostgreSQL settings for local development
+    environment:
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    
+    # Use local volume for development (easier to reset)
+    volumes:
+      - ./postgres_data_dev:/var/lib/postgresql/data
+
+  cache:
+    # Disable Redis persistence for faster development
+    command: redis-server --save "" --appendonly no
+
+  nginx:
+    # Disable SSL redirect for local development
+    # You may want to comment out SSL redirect in nginx.conf for local dev
+    ports:
+      - "3000:80"  # Use different port to avoid conflicts
+      # - "8443:443"  # Uncomment if you need HTTPS locally
+
