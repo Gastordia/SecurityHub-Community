@@ -120,28 +120,6 @@ class SandboxDataGenerator:
         }
         return round(scores.get(severity, 5.0), 1)
     
-    def generate_fake_charts(self) -> Dict[str, str]:
-        """
-        Generate fake chart data (SVG placeholders).
-        
-        Returns:
-            Dictionary with chart SVG strings
-        """
-        # Generate pie chart SVG (placeholder)
-        pie_chart = '''
-        <svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="200" cy="200" r="150" fill="#FF491C" opacity="0.3"/>
-            <text x="200" y="200" text-anchor="middle" font-size="24" fill="#333">Sample Chart</text>
-            <text x="200" y="230" text-anchor="middle" font-size="16" fill="#666">Severity Distribution</text>
-        </svg>
-        '''
-        
-        return {
-            'pie_chart': pie_chart,
-            'bar_chart': '<svg>Bar Chart Placeholder</svg>',
-            'timeline_chart': '<svg>Timeline Chart Placeholder</svg>'
-        }
-    
     def generate_fake_instances(self, vuln_count: int = 10) -> List[Dict[str, Any]]:
         """
         Generate fake vulnerable instance data.
@@ -283,8 +261,7 @@ class SandboxDataGenerator:
             'instances': instances,
             'totalvulnerability': len(vulnerabilities),
             'total_findings': len(vulnerabilities),  # Standardized name
-            'ciritcal': severity_counts.get('Critical', 0),
-            'critical': severity_counts.get('Critical', 0),  # Standardized name
+            'critical': severity_counts.get('Critical', 0),
             'high': severity_counts.get('High', 0),
             'medium': severity_counts.get('Medium', 0),
             'low': severity_counts.get('Low', 0),

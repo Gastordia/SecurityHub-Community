@@ -96,6 +96,17 @@ The application will be available at:
 - **Multi-Project Support**: Manage vulnerabilities across multiple projects
 - **Status Tracking**: Track vulnerability status from discovery to remediation
 - **Retest Management**: Track retest cycles per vulnerability instance
+- **Triage Workflow**: Mark findings as false positive, suppressed, or verified; record risk acceptance with a reason
+- **Bulk Operations**: Bulk-delete projects via a single `DELETE` request with a JSON array of IDs
+- **Login Flexibility**: Authenticate with either username or email address
+
+### Finding Details
+- **SAST Support**: Source/sink file + line number tracking, tainted-flow flag (populated by the SARIF parser)
+- **Container & Kubernetes Context**: Cluster, namespace, workload, image, and image-digest fields (populated by the Trivy parser)
+- **SCA / Dependency Intelligence**: Package name, version, type, CPE, installed/vulnerable versions (populated by Trivy and SARIF parsers)
+- **Compliance Mapping**: NIST 800-53, OWASP MASVS, DISA STIG, and arbitrary compliance-framework fields
+- **MITRE ATT&CK**: Tactic and technique storage on each finding
+- **Network Context**: IP addresses, hostnames, ports, services, protocols, and endpoints captured from scanner output
 
 ### Reporting
 - **PDF Reports**: Generate professional PDF reports (via WeasyPrint)
@@ -107,9 +118,12 @@ The application will be available at:
 - **Project Organisation**: Manage all security projects in one place
 - **Schedule Management**: Track project start/end dates
 - **Scope Management**: Define and manage assessment scope per project
+- **Scope Auto-Import**: Import scope from an Nmap XML file via the `/api/project/projects/:id/import-scope/` endpoint
+- **Status Auto-Progression**: Project status updates automatically as findings change
 
 ### Security Features
 - **API Security**: JWT authentication via httpOnly cookies, rate limiting, input validation
+- **Scoped Report Token**: Short-lived JWT issued at report generation time for secure image fetching (separate from the session token)
 - **Audit Logging**: Audit trail of key operations
 - **XSS/XXE Hardening**: `bleach` sanitization on rich-text fields, `defusedxml` for all XML parsing
 
@@ -256,11 +270,12 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 ## ✅ What's Implemented
 
-- **Authentication** — JWT auth via httpOnly cookies, simple staff/admin permission model
-- **Vulnerability Management** — full CRUD, status tracking, retest support, multi-project
-- **Project Management** — project lifecycle, scope management
+- **Authentication** — JWT auth via httpOnly cookies, login with username or email, simple staff/admin permission model
+- **Vulnerability Management** — full CRUD, status tracking, retest support, multi-project, triage workflow (false positive / suppressed / verified / risk acceptance)
+- **Rich Finding Fields** — SAST source/sink tracking (SARIF), container/Kubernetes context (Trivy), SCA dependency intelligence (Trivy/SARIF), compliance mapping (NIST 800-53, MASVS, DISA STIG), MITRE ATT&CK, network context
+- **Project Management** — project lifecycle, scope management, Nmap XML scope import, auto status progression, bulk project delete
 - **Scanner Integration** — 12 built-in parsers (Nessus, Burp Suite, Nmap, Acunetix, ZAP, Nuclei, OpenVAS, Qualys, Nexpose, AppSpider, SARIF, Trivy)
-- **Reporting** — PDF and DOCX generation with a versioned template system and dynamic severity charts
+- **Reporting** — PDF and DOCX generation with a versioned template system and dynamic severity charts; scoped short-lived JWT for secure report image fetching
 - **Vulnerability Library / Project Types / Report Standards** — read-only reference data, synced on-demand from a configurable GitHub source
 - **API** — full REST API with OpenAPI/Swagger docs
 - **Docker Deployment** — full containerization with Docker Compose

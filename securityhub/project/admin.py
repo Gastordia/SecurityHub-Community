@@ -13,7 +13,7 @@ class ProjectAdmin(admin.ModelAdmin):
 @admin.register(Vulnerability)
 class VulnerabilityAdmin(admin.ModelAdmin):
     list_display = ['vulnerabilityname', 'project', 'vulnerabilityseverity', 'status', 'created']
-    list_filter = ['vulnerabilityseverity', 'status', 'has_exploit', 'has_cisa_kev_exploit', 'published']
+    list_filter = ['vulnerabilityseverity', 'status', 'has_exploit', 'published']
     search_fields = ['vulnerabilityname', 'project__name', 'cve', 'cwe', 'vulnerabilitydescription']
     readonly_fields = ['created', 'published_date', 'fixed_date']
 

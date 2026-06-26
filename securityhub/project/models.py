@@ -146,16 +146,13 @@ class Vulnerability(models.Model):
     
     # ✅ Intelligence Engine Fields - Threat Intelligence
     has_exploit = models.BooleanField(default=False, help_text="Vulnerability has known exploits")
-    has_cisa_kev_exploit = models.BooleanField(default=False, help_text="Vulnerability is in CISA KEV")
     exploit_code_maturity = models.CharField(max_length=50, blank=True, null=True, help_text="Exploit code maturity level")
     exploitation_availability = models.CharField(max_length=50, blank=True, null=True, help_text="Exploitation availability")
     exploitation_complexity = models.CharField(max_length=50, blank=True, null=True, help_text="Exploitation complexity")
     exploitation_impact = models.CharField(max_length=50, blank=True, null=True, help_text="Exploitation impact")
     exploitation_method = models.CharField(max_length=100, blank=True, null=True, help_text="Exploitation method")
     exploitation_score = models.FloatField(blank=True, null=True, help_text="Exploitation score")
-    epss_score = models.FloatField(blank=True, null=True, help_text="EPSS (Exploit Prediction Scoring System) score")
-    epss_percentile = models.FloatField(blank=True, null=True, help_text="EPSS percentile")
-    
+
     # ✅ Intelligence Engine Fields - Asset Intelligence
     asset_criticality = models.CharField(max_length=50, blank=True, null=True, help_text="Asset criticality level")
     asset_value = models.CharField(max_length=50, blank=True, null=True, help_text="Asset business value")
@@ -193,12 +190,7 @@ class Vulnerability(models.Model):
     
     # ✅ Intelligence Engine Fields - Multi-Source Scoring
     vendor_score = models.FloatField(blank=True, null=True, help_text="Vendor-specific score")
-    aqua_score = models.FloatField(blank=True, null=True, help_text="Aqua Security score")
-    inspector_score = models.FloatField(blank=True, null=True, help_text="AWS Inspector score")
-    nvd_score = models.FloatField(blank=True, null=True, help_text="NVD score")
-    nvd_score_v3 = models.FloatField(blank=True, null=True, help_text="NVD CVSS v3 score")
     custom_risk_score = models.FloatField(blank=True, null=True, help_text="Custom risk score")
-    final_intelligence_score = models.FloatField(blank=True, null=True, help_text="Final intelligence score")
     
     # ✅ Intelligence Engine Fields - Compliance & Regulatory
     compliance_frameworks = models.JSONField(blank=True, null=True, help_text="Compliance frameworks")
@@ -246,34 +238,6 @@ class Vulnerability(models.Model):
     risk_acceptance = models.BooleanField(default=False, help_text="Risk accepted")
     risk_acceptance_reason = models.TextField(blank=True, null=True, help_text="Risk acceptance reason")
     
-    # ✅ Intelligence Engine Fields - Metadata
-    intelligence_metadata = models.JSONField(blank=True, null=True, help_text="Intelligence metadata")
-    correlation_data = models.JSONField(blank=True, null=True, help_text="Correlation data")
-    enrichment_data = models.JSONField(blank=True, null=True, help_text="Enrichment data")
-    last_intelligence_update = models.DateTimeField(auto_now=True, help_text="Last intelligence update")
-    
-    # ✅ Enhanced Intelligence Fields
-    enrichment_last_updated = models.DateTimeField(blank=True, null=True, help_text="Last enrichment timestamp")
-    intelligence_confidence = models.FloatField(default=0.0, help_text="Intelligence confidence score (0-1)")
-    threat_level = models.CharField(max_length=20, choices=[
-        ('critical', 'Critical'),
-        ('high', 'High'),
-        ('medium', 'Medium'),
-        ('low', 'Low'),
-        ('informational', 'Informational'),
-        ('unknown', 'Unknown')
-    ], default='unknown', help_text="Threat level assessment")
-    data_sources = models.JSONField(blank=True, null=True, help_text="Intelligence data sources used")
-    kev_urgency_level = models.CharField(max_length=20, blank=True, null=True, help_text="CISA KEV urgency level")
-    exploit_types = models.JSONField(blank=True, null=True, help_text="Types of available exploits")
-    metasploit_modules = models.IntegerField(default=0, help_text="Number of Metasploit modules available")
-    
-    # ✅ NEW: Asset-specific context
-    asset_context = models.JSONField(
-        blank=True,
-        null=True,
-        help_text="Asset-specific vulnerability context"
-    )
 
     class Meta:
         unique_together = (("project", "vulnerabilityname"),)
@@ -285,9 +249,6 @@ class Vulnerability(models.Model):
             models.Index(fields=['published_date'], name='vuln_published_idx'),
             models.Index(fields=['fixed_date'], name='vuln_fixed_idx'),
             models.Index(fields=['has_exploit'], name='vuln_exploit_idx'),
-            models.Index(fields=['has_cisa_kev_exploit'], name='vuln_cisa_kev_idx'),
-            models.Index(fields=['epss_score'], name='vuln_epss_idx'),
-            models.Index(fields=['final_intelligence_score'], name='vuln_intel_score_idx'),
         ]
 
     def save(self, *args, **kwargs):
@@ -335,101 +296,6 @@ class Vulnerability(models.Model):
         except ImportError:
             return False
 
-    def calculate_intelligence_score(self):
-        """✅ NEW: Calculate final intelligence score based on multiple factors"""
-        score = 0.0
-        factors = []
-        
-        # Base CVSS score (0-10) - 25% weight
-        if self.cvssscore:
-            score += self.cvssscore * 0.25
-            factors.append(f"CVSS: {self.cvssscore}")
-        
-        # CVSS Temporal scores (use highest available) - 10% weight
-        intelligence_metadata = self.intelligence_metadata or {}
-        cvss_temporal = intelligence_metadata.get('cvss_v3_temporal') or intelligence_metadata.get('cvss_v2_temporal')
-        if cvss_temporal:
-            score += min(cvss_temporal * 0.1, 1.0)
-            factors.append(f"CVSS Temporal: {cvss_temporal}")
-        
-        # VPR Score (0-10) - 15% weight
-        vpr_score = intelligence_metadata.get('vpr_score')
-        if vpr_score:
-            score += min(vpr_score * 0.15, 1.5)
-            factors.append(f"VPR: {vpr_score}")
-        
-        # EPSS score (0-1) - 15% weight
-        if self.epss_score:
-            score += self.epss_score * 10 * 0.15
-            factors.append(f"EPSS: {self.epss_score}")
-        elif intelligence_metadata.get('epss_score'):
-            # Fallback to metadata if field not set
-            epss = intelligence_metadata.get('epss_score')
-            score += epss * 10 * 0.15
-            factors.append(f"EPSS (metadata): {epss}")
-        
-        # Exploitation availability - 20% weight
-        if self.has_exploit:
-            score += 2.0
-            factors.append("Has exploit")
-        
-        # Exploit framework availability (Metasploit, Core Impact, CANVAS) - 5% weight each
-        scanner_tags = self.scanner_tags or []
-        if 'metasploit' in scanner_tags:
-            score += 0.5
-            factors.append("Metasploit exploit available")
-        if 'core_impact' in scanner_tags:
-            score += 0.5
-            factors.append("Core Impact exploit available")
-        if 'canvas' in scanner_tags:
-            score += 0.5
-            factors.append("CANVAS exploit available")
-        
-        # STIG Severity - 5% weight
-        stig_severity = intelligence_metadata.get('stig_severity')
-        if stig_severity:
-            stig_weights = {
-                'critical': 0.5,
-                'high': 0.4,
-                'medium': 0.3,
-                'low': 0.2,
-                'none': 0.1
-            }
-            stig_lower = stig_severity.lower()
-            for key, weight in stig_weights.items():
-                if key in stig_lower:
-                    score += weight
-                    factors.append(f"STIG: {stig_severity}")
-                    break
-        
-        # CISA KEV status - 10% weight
-        if self.has_cisa_kev_exploit:
-            score += 1.0
-            factors.append("CISA KEV")
-        
-        # Asset criticality - 5% weight
-        criticality_scores = {
-            'critical': 0.5,
-            'high': 0.4,
-            'medium': 0.3,
-            'low': 0.2
-        }
-        if self.asset_criticality in criticality_scores:
-            score += criticality_scores[self.asset_criticality]
-            factors.append(f"Asset: {self.asset_criticality}")
-        
-        # Cap at 10.0
-        final_score = min(score, 10.0)
-        
-        # Update the stored score
-        self.final_intelligence_score = final_score
-        
-        return {
-            'score': final_score,
-            'factors': factors,
-            'max_score': 10.0
-        }
-    
     def get_cve_list(self):
         """Get list of CVE IDs"""
         if self.cve and isinstance(self.cve, list):
@@ -446,31 +312,6 @@ class Vulnerability(models.Model):
             return [self.cwe]
         return []
     
-    def get_intelligence_summary(self):
-        """✅ NEW: Get comprehensive intelligence summary"""
-        ed = self.enrichment_data if isinstance(self.enrichment_data, dict) else {}
-        pl = ed.get('poc_links')
-        gh = ed.get('github_pocs')
-        if isinstance(pl, list) and pl:
-            poc_count = len(pl)
-        elif isinstance(gh, list):
-            poc_count = len(gh)
-        else:
-            poc_count = 0
-        return {
-            'cve_list': self.get_cve_list(),
-            'cwe_list': self.get_cwe_list(),
-            'threat_level': self.threat_level,
-            'final_score': self.final_intelligence_score,
-            'epss_score': self.epss_score,
-            'has_exploit': self.has_exploit,
-            'in_cisa_kev': self.has_cisa_kev_exploit,
-            'intelligence_confidence': self.intelligence_confidence,
-            'last_enriched': self.enrichment_last_updated,
-            'data_sources': self.data_sources or [],
-            'poc_link_count': poc_count,
-        }
-
     def __str__(self):
         return self.vulnerabilityname
 

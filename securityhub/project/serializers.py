@@ -175,7 +175,6 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
     )
     cve_list = serializers.SerializerMethodField()
     cwe_list = serializers.SerializerMethodField()
-    kev_summary = serializers.SerializerMethodField()
     instance_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -191,9 +190,9 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
             'created', 'published_date', 'fixed_date',
             # Authorship
             'created_by', 'created_by_name', 'last_updated_by', 'last_updated_by_name',
-            # Basic intelligence: CVE + CISA KEV only
+            # CVE references
             'cve', 'cve_list', 'cwe_list',
-            'has_exploit', 'has_cisa_kev_exploit', 'kev_urgency_level', 'kev_summary',
+            'has_exploit',
             # Workflow
             'false_positive', 'suppressed', 'verified',
             # Instance count
@@ -211,13 +210,6 @@ class VulnerabilitySerializer(serializers.ModelSerializer):
         """Get list of CWE IDs"""
         return obj.get_cwe_list()
     
-    @extend_schema_field(OpenApiTypes.OBJECT)
-    def get_kev_summary(self, obj):
-        data = obj.enrichment_data
-        if isinstance(data, dict):
-            return data.get('kev_summary')
-        return None
-
     @extend_schema_field(OpenApiTypes.INT)
     def get_instance_count(self, obj):
         # Use annotated value from queryset to avoid N+1; fall back to live count
