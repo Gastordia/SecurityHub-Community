@@ -6,6 +6,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/Button'
 import { PageSpinner, EmptyState } from '@/components/ui/Spinner'
 import { severityBadge } from '@/components/ui/Badge'
+import { Modal } from '@/components/ui/Modal'
 import toast from 'react-hot-toast'
 
 const SEVERITIES = ['Critical', 'High', 'Medium', 'Low', 'Info']
@@ -18,6 +19,7 @@ export default function VulnDBPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const [severity, setSeverity] = useState('')
+  const [selectedEntry, setSelectedEntry] = useState<string | number | null>(null)
 
   const { data, isLoading } = useQuery({
     queryKey: ['vulndb', { search, page, severity }],
@@ -31,6 +33,12 @@ export default function VulnDBPage() {
   })
   const entries = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
   const total = data?.count ?? entries.length
+
+  const { data: entryData, isLoading: entryLoading } = useQuery({
+    queryKey: ['vulndb-entry', selectedEntry],
+    queryFn: () => standardizedApiClient.getVulnDBEntry(selectedEntry!),
+    enabled: selectedEntry !== null,
+  })
 
   const sync = useMutation({
     mutationFn: () => standardizedApiClient.syncVulnDB(),
@@ -111,7 +119,7 @@ export default function VulnDBPage() {
             </thead>
             <tbody className="divide-y divide-slate-800">
               {entries.map((v: any) => (
-                <tr key={v.id} className="hover:bg-slate-800/40 transition-colors">
+                <tr key={v.id} onClick={() => setSelectedEntry(v.id)} className="hover:bg-slate-800/40 transition-colors cursor-pointer">
                   <td className="px-4 py-3 text-white font-medium">{v.vulnerabilityname}</td>
                   <td className="px-4 py-3 hidden sm:table-cell">{severityBadge(v.vulnerabilityseverity)}</td>
                   <td className="px-4 py-3 text-slate-400 text-xs hidden lg:table-cell">
@@ -136,6 +144,73 @@ export default function VulnDBPage() {
           </Button>
         </div>
       )}
+
+      <Modal
+        open={selectedEntry !== null}
+        onClose={() => setSelectedEntry(null)}
+        title={entryData?.vulnerabilityname || 'Loading…'}
+        size="lg"
+        footer={
+          <Button variant="secondary" size="sm" onClick={() => setSelectedEntry(null)}>Close</Button>
+        }
+      >
+        {entryLoading ? (
+          <PageSpinner />
+        ) : entryData ? (
+          <div className="space-y-4">
+            {entryData.vulnerabilityseverity && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase font-medium mb-1">Severity</p>
+                {severityBadge(entryData.vulnerabilityseverity)}
+              </div>
+            )}
+            {entryData.cvssscore != null && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase font-medium mb-1">CVSS Score</p>
+                <p className="text-sm text-slate-300">{entryData.cvssscore}</p>
+              </div>
+            )}
+            {entryData.cvssvector && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase font-medium mb-1">CVSS Vector</p>
+                <p className="text-sm text-slate-300 font-mono">{entryData.cvssvector}</p>
+              </div>
+            )}
+            {entryData.cve && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase font-medium mb-1">CVE</p>
+                <p className="text-sm text-slate-300">{entryData.cve}</p>
+              </div>
+            )}
+            {entryData.cwe && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase font-medium mb-1">CWE</p>
+                <p className="text-sm text-slate-300">
+                  {Array.isArray(entryData.cwe) ? entryData.cwe.join(', ') : entryData.cwe}
+                </p>
+              </div>
+            )}
+            {entryData.vulnerabilitydescription && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase font-medium mb-1">Description</p>
+                <pre className="whitespace-pre-wrap text-sm text-slate-300">{entryData.vulnerabilitydescription}</pre>
+              </div>
+            )}
+            {entryData.vulnerabilitysolution && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase font-medium mb-1">Solution</p>
+                <pre className="whitespace-pre-wrap text-sm text-slate-300">{entryData.vulnerabilitysolution}</pre>
+              </div>
+            )}
+            {entryData.vulnerabilityreferlnk && (
+              <div>
+                <p className="text-xs text-slate-500 uppercase font-medium mb-1">References</p>
+                <pre className="whitespace-pre-wrap text-sm text-slate-300">{entryData.vulnerabilityreferlnk}</pre>
+              </div>
+            )}
+          </div>
+        ) : null}
+      </Modal>
     </div>
   )
 }

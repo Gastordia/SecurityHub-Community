@@ -120,6 +120,10 @@ export const standardizedApiClient = {
     const response = await apiClient.post('/api/project/projects/', data)
     return response.data
   },
+  async updateProject(id: string | number, data: Record<string, any>) {
+    const response = await apiClient.patch(`/api/project/projects/${id}/`, data)
+    return response.data
+  },
   async deleteProject(id: string | number) {
     const response = await apiClient.delete(`/api/project/projects/${id}/`)
     return response.data
@@ -224,6 +228,10 @@ export const standardizedApiClient = {
   },
   async syncVulnDB() {
     const response = await apiClient.post('/api/vulndb/vulnerabilities/database/sync/')
+    return response.data
+  },
+  async getVulnDBEntry(id: string | number) {
+    const response = await apiClient.get(`/api/vulndb/vulnerabilities/database/${id}/`)
     return response.data
   },
 

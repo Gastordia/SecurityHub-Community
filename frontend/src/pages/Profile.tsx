@@ -14,8 +14,32 @@ export default function ProfilePage() {
     position: user?.position || '',
   })
   const [profileLoading, setProfileLoading] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordLoading, setPasswordLoading] = useState(false)
 
   const setPf = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setProfileForm(f => ({ ...f, [k]: e.target.value }))
+
+  const savePassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match')
+      return
+    }
+    setPasswordError('')
+    setPasswordLoading(true)
+    try {
+      await standardizedApiClient.updateProfile({ password: newPassword })
+      toast.success('Password changed')
+      setNewPassword('')
+      setConfirmPassword('')
+    } catch (err: any) {
+      toast.error(err?.message || 'Failed to change password')
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
 
   const saveProfile = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -52,6 +76,40 @@ export default function ProfilePage() {
             <Button size="sm" type="submit" loading={profileLoading}>Save Changes</Button>
           </div>
         </form>
+
+        <div className="border-t border-slate-700 mt-6 pt-6">
+          <h3 className="text-sm font-medium text-slate-300 mb-4">Change Password</h3>
+          <form onSubmit={savePassword} className="space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">New Password</label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                required
+                minLength={8}
+                className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Min 8 characters"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Confirm Password</label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={e => { setConfirmPassword(e.target.value); setPasswordError('') }}
+                required
+                minLength={8}
+                className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Repeat new password"
+              />
+              {passwordError && <p className="text-xs text-red-400 mt-1">{passwordError}</p>}
+            </div>
+            <div className="flex justify-end pt-1">
+              <Button size="sm" type="submit" loading={passwordLoading}>Change Password</Button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   )

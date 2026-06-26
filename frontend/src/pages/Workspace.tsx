@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Textarea, Select } from '@/components/ui/Input'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { PageSpinner, EmptyState } from '@/components/ui/Spinner'
-import { severityBadge, statusBadge, Badge } from '@/components/ui/Badge'
+import { severityBadge, Badge } from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
 
 type Tab = 'vulnerabilities' | 'assets' | 'scope' | 'scanner' | 'report'
@@ -27,6 +27,8 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'report',          label: 'Report' },
 ]
 
+const PROJECT_STATUSES = ['In Progress', 'Completed', 'Delay', 'Hold'] as const
+
 // ── Findings ──────────────────────────────────────────────────────────────────
 
 const VULN_STATUSES = ['Vulnerable', 'Confirm Fixed', 'Accepted Risk', 'False Positive']
@@ -38,40 +40,99 @@ function toIdList(raw: any): string {
 function parseIdList(text: string): string[] {
   return text.split(/[,\s]+/).map(s => s.trim()).filter(Boolean)
 }
+function toCommaSep(val: any): string {
+  if (!val) return ''
+  if (Array.isArray(val)) return val.join(', ')
+  return String(val)
+}
+function parseCommaSep(text: string): string[] {
+  return text.split(',').map(s => s.trim()).filter(Boolean)
+}
 
 function VulnForm({ initial, projectId, onSave, onCancel, loading }: {
   initial?: any; projectId: string; onSave: (d: any) => void; onCancel: () => void; loading: boolean
 }) {
   const [form, setForm] = useState({
     project: projectId,
-    vulnerabilityname:       initial?.vulnerabilityname       || '',
-    vulnerabilityseverity:   initial?.vulnerabilityseverity   || 'Medium',
-    cvssscore:               initial?.cvssscore               ?? '',
-    cvssvector:              initial?.cvssvector               || '',
-    status:                  initial?.status                  || 'Vulnerable',
-    vulnerabilitydescription:initial?.vulnerabilitydescription || '',
-    vulnerabilitysolution:   initial?.vulnerabilitysolution   || '',
-    POC:                     initial?.POC                     || '',
-    vulnerabilityreferlnk:   initial?.vulnerabilityreferlnk   || '',
-    cweText:  toIdList(initial?.cwe),
-    cveText:  toIdList(initial?.cve),
+    vulnerabilityname:        initial?.vulnerabilityname        || '',
+    vulnerabilityseverity:    initial?.vulnerabilityseverity    || 'Medium',
+    cvssscore:                initial?.cvssscore                ?? '',
+    cvssvector:               initial?.cvssvector               || '',
+    status:                   initial?.status                   || 'Vulnerable',
+    vulnerabilitydescription: initial?.vulnerabilitydescription || '',
+    vulnerabilitysolution:    initial?.vulnerabilitysolution    || '',
+    POC:                      initial?.POC                      || '',
+    vulnerabilityreferlnk:    initial?.vulnerabilityreferlnk    || '',
+    cweText: toIdList(initial?.cwe),
+    cveText: toIdList(initial?.cve),
     verified:       !!initial?.verified,
     false_positive: !!initial?.false_positive,
     suppressed:     !!initial?.suppressed,
+    // Triage
+    risk_acceptance:        !!initial?.risk_acceptance,
+    risk_acceptance_reason: initial?.risk_acceptance_reason || '',
+    // SAST
+    source_file:  initial?.source_file  || '',
+    source_line:  initial?.source_line  ?? '',
+    sink_file:    initial?.sink_file    || '',
+    sink_line:    initial?.sink_line    ?? '',
+    tainted_flow: !!initial?.tainted_flow,
+    // Container / Kubernetes
+    cloud_platform:         initial?.cloud_platform         || '',
+    kubernetes_cluster:     initial?.kubernetes_cluster     || '',
+    kubernetes_namespace:   initial?.kubernetes_namespace   || '',
+    kubernetes_workload:    initial?.kubernetes_workload    || '',
+    container_image:        initial?.container_image        || '',
+    container_image_digest: initial?.container_image_digest || '',
+    // Dependency / SCA
+    package_name:        initial?.package_name        || '',
+    package_version:     initial?.package_version     || '',
+    package_type:        initial?.package_type        || '',
+    installed_version:   initial?.installed_version   || '',
+    vulnerable_versions: initial?.vulnerable_versions || '',
+    // Compliance (comma-separated text → array on submit)
+    compliance_frameworksText: toCommaSep(initial?.compliance_frameworks),
+    nist_800_53_controlsText:  toCommaSep(initial?.nist_800_53_controls),
+    masvs_controlsText:        toCommaSep(initial?.masvs_controls),
+    disa_stigText:             toCommaSep(initial?.disa_stig),
+    // MITRE ATT&CK (comma-separated text → array on submit)
+    mitre_tacticsText:    toCommaSep(initial?.mitre_tactics),
+    mitre_techniquesText: toCommaSep(initial?.mitre_techniques),
   })
+
   const set  = (k: string) => (e: React.ChangeEvent<any>) => setForm(f => ({ ...f, [k]: e.target.value }))
   const setB = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm(f => ({ ...f, [k]: e.target.checked }))
 
   const handleSave = () => {
-    const { cweText, cveText, ...rest } = form
+    const {
+      cweText, cveText,
+      compliance_frameworksText, nist_800_53_controlsText, masvs_controlsText, disa_stigText,
+      mitre_tacticsText, mitre_techniquesText,
+      ...rest
+    } = form
     const cwe = parseIdList(cweText)
     const cve = parseIdList(cveText)
+    const compliance_frameworks = parseCommaSep(compliance_frameworksText)
+    const nist_800_53_controls  = parseCommaSep(nist_800_53_controlsText)
+    const masvs_controls        = parseCommaSep(masvs_controlsText)
+    const disa_stig             = parseCommaSep(disa_stigText)
+    const mitre_tactics         = parseCommaSep(mitre_tacticsText)
+    const mitre_techniques      = parseCommaSep(mitre_techniquesText)
     onSave({
       ...rest,
-      ...(cwe.length ? { cwe } : {}),
-      ...(cve.length ? { cve } : {}),
+      ...(cwe.length               ? { cwe }                : {}),
+      ...(cve.length               ? { cve }                : {}),
+      ...(compliance_frameworks.length ? { compliance_frameworks } : {}),
+      ...(nist_800_53_controls.length  ? { nist_800_53_controls }  : {}),
+      ...(masvs_controls.length    ? { masvs_controls }    : {}),
+      ...(disa_stig.length         ? { disa_stig }         : {}),
+      ...(mitre_tactics.length     ? { mitre_tactics }     : {}),
+      ...(mitre_techniques.length  ? { mitre_techniques }  : {}),
     })
   }
+
+  // shared raw-input class
+  const inp = 'w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500'
 
   return (
     <form onSubmit={e => { e.preventDefault(); handleSave() }} className="space-y-4">
@@ -117,6 +178,183 @@ function VulnForm({ initial, projectId, onSave, onCancel, loading }: {
           </label>
         ))}
       </div>
+
+      {/* ── Technical Details (collapsible) ── */}
+      <details className="group border border-slate-700/50 rounded-lg overflow-hidden">
+        <summary className="flex items-center gap-2 px-4 py-3 cursor-pointer bg-slate-800/50 hover:bg-slate-800 transition-colors list-none">
+          <ChevronRightIcon className="w-3.5 h-3.5 text-slate-500 group-open:rotate-90 transition-transform shrink-0" />
+          <span className="text-sm font-medium text-slate-400">Technical Details</span>
+        </summary>
+
+        <div className="px-4 pb-4 pt-3 space-y-5">
+
+          {/* Triage */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Triage</p>
+            <div className="space-y-3">
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={form.risk_acceptance} onChange={setB('risk_acceptance')}
+                  className="w-3.5 h-3.5 rounded accent-indigo-500" />
+                <span className="text-sm text-slate-400">Risk Acceptance</span>
+              </label>
+              {form.risk_acceptance && (
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Risk Acceptance Reason</label>
+                  <textarea value={form.risk_acceptance_reason} onChange={set('risk_acceptance_reason')} rows={2}
+                    className={inp + ' resize-none'} />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* SAST */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">SAST</p>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Source File</label>
+                  <input type="text" value={form.source_file} onChange={set('source_file')}
+                    placeholder="e.g. src/auth/login.py" className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Source Line</label>
+                  <input type="number" value={form.source_line} onChange={set('source_line')} className={inp} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Sink File</label>
+                  <input type="text" value={form.sink_file} onChange={set('sink_file')} className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Sink Line</label>
+                  <input type="number" value={form.sink_line} onChange={set('sink_line')} className={inp} />
+                </div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" checked={form.tainted_flow} onChange={setB('tainted_flow')}
+                  className="w-3.5 h-3.5 rounded accent-indigo-500" />
+                <span className="text-sm text-slate-400">Tainted Flow</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Container / Kubernetes */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Container / Kubernetes</p>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Cloud Platform</label>
+                  <input type="text" value={form.cloud_platform} onChange={set('cloud_platform')}
+                    placeholder="aws / azure / gcp" className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Kubernetes Cluster</label>
+                  <input type="text" value={form.kubernetes_cluster} onChange={set('kubernetes_cluster')} className={inp} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Kubernetes Namespace</label>
+                  <input type="text" value={form.kubernetes_namespace} onChange={set('kubernetes_namespace')} className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Kubernetes Workload</label>
+                  <input type="text" value={form.kubernetes_workload} onChange={set('kubernetes_workload')} className={inp} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Container Image</label>
+                <input type="text" value={form.container_image} onChange={set('container_image')} className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Container Image Digest</label>
+                <input type="text" value={form.container_image_digest} onChange={set('container_image_digest')} className={inp} />
+              </div>
+            </div>
+          </div>
+
+          {/* Dependency / SCA */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Dependency / SCA</p>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Package Name</label>
+                  <input type="text" value={form.package_name} onChange={set('package_name')} className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Package Version</label>
+                  <input type="text" value={form.package_version} onChange={set('package_version')} className={inp} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Package Type</label>
+                  <input type="text" value={form.package_type} onChange={set('package_type')}
+                    placeholder="npm / pip / maven / go" className={inp} />
+                </div>
+                <div>
+                  <label className="block text-xs text-slate-400 mb-1">Installed Version</label>
+                  <input type="text" value={form.installed_version} onChange={set('installed_version')} className={inp} />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Vulnerable Versions</label>
+                <input type="text" value={form.vulnerable_versions} onChange={set('vulnerable_versions')}
+                  placeholder="comma-separated ranges" className={inp} />
+              </div>
+            </div>
+          </div>
+
+          {/* Compliance */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Compliance</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Compliance Frameworks</label>
+                <input type="text" value={form.compliance_frameworksText} onChange={set('compliance_frameworksText')}
+                  placeholder="PCI DSS, ISO 27001" className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">NIST 800-53 Controls</label>
+                <input type="text" value={form.nist_800_53_controlsText} onChange={set('nist_800_53_controlsText')}
+                  placeholder="AC-2, AC-3" className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">MASVS Controls</label>
+                <input type="text" value={form.masvs_controlsText} onChange={set('masvs_controlsText')}
+                  placeholder="MASVS-STORAGE-1" className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">DISA STIG</label>
+                <input type="text" value={form.disa_stigText} onChange={set('disa_stigText')}
+                  placeholder="V-123456" className={inp} />
+              </div>
+            </div>
+          </div>
+
+          {/* MITRE ATT&CK */}
+          <div>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">MITRE ATT&amp;CK</p>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Tactics</label>
+                <input type="text" value={form.mitre_tacticsText} onChange={set('mitre_tacticsText')}
+                  placeholder="TA0001, TA0002" className={inp} />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Techniques</label>
+                <input type="text" value={form.mitre_techniquesText} onChange={set('mitre_techniquesText')}
+                  placeholder="T1190, T1059" className={inp} />
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </details>
 
       <div className="flex justify-end gap-2 pt-1">
         <Button variant="secondary" size="sm" type="button" onClick={onCancel} disabled={loading}>Cancel</Button>
@@ -223,6 +461,36 @@ function VulnRow({ v, onEdit, onDelete }: { v: any; onEdit: () => void; onDelete
   const poc     = v.POC?.trim()
   const vector  = v.cvssvector?.trim()
 
+  // Build extended-details key-value pairs (Task 4)
+  const extDetails = ([
+    ['Risk Acceptance',        v.risk_acceptance ? 'Yes' : null],
+    ['Risk Acceptance Reason', v.risk_acceptance_reason || null],
+    ['Source File',            v.source_file || null],
+    ['Source Line',            v.source_line != null && v.source_line !== '' ? String(v.source_line) : null],
+    ['Sink File',              v.sink_file || null],
+    ['Sink Line',              v.sink_line != null && v.sink_line !== '' ? String(v.sink_line) : null],
+    ['Tainted Flow',           v.tainted_flow ? 'Yes' : null],
+    ['Cloud Platform',         v.cloud_platform || null],
+    ['Kubernetes Cluster',     v.kubernetes_cluster || null],
+    ['Kubernetes Namespace',   v.kubernetes_namespace || null],
+    ['Kubernetes Workload',    v.kubernetes_workload || null],
+    ['Container Image',        v.container_image || null],
+    ['Container Image Digest', v.container_image_digest || null],
+    ['Package Name',           v.package_name || null],
+    ['Package Version',        v.package_version || null],
+    ['Package Type',           v.package_type || null],
+    ['Installed Version',      v.installed_version || null],
+    ['Vulnerable Versions',    v.vulnerable_versions || null],
+    ['Compliance Frameworks',  v.compliance_frameworks?.length ? toCommaSep(v.compliance_frameworks) : null],
+    ['NIST 800-53 Controls',   v.nist_800_53_controls?.length ? toCommaSep(v.nist_800_53_controls) : null],
+    ['MASVS Controls',         v.masvs_controls?.length ? toCommaSep(v.masvs_controls) : null],
+    ['DISA STIG',              v.disa_stig?.length ? toCommaSep(v.disa_stig) : null],
+    ['MITRE Tactics',          v.mitre_tactics?.length ? toCommaSep(v.mitre_tactics) : null],
+    ['MITRE Techniques',       v.mitre_techniques?.length ? toCommaSep(v.mitre_techniques) : null],
+  ] as [string, string | null][]).filter(([, val]) => val != null) as [string, string][]
+
+  const hasExtendedDetails = extDetails.length > 0
+
   return (
     <div className="bg-slate-800/60 border border-slate-700/50 rounded-lg overflow-hidden">
       {/* ── Row header ── */}
@@ -242,7 +510,6 @@ function VulnRow({ v, onEdit, onDelete }: { v: any; onEdit: () => void; onDelete
             {v.cvssscore > 0 && <span className="text-xs text-slate-500">CVSS {v.cvssscore}</span>}
             {v.instance_count > 0 && <span className="text-xs text-slate-600">{v.instance_count} asset{v.instance_count !== 1 ? 's' : ''}</span>}
             {v.has_exploit && <span className="text-xs text-orange-400">⚡ Exploit known</span>}
-            {v.has_cisa_kev_exploit && <span className="text-xs text-red-400">🔴 CISA KEV</span>}
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0" onClick={e => e.stopPropagation()}>
@@ -281,35 +548,14 @@ function VulnRow({ v, onEdit, onDelete }: { v: any; onEdit: () => void; onDelete
             </Section>
           )}
 
-          {/* Threat intel */}
-          {(v.has_exploit || v.has_cisa_kev_exploit || v.epss_score != null) && (
+          {/* Known exploit (only — dead intel fields removed) */}
+          {v.has_exploit && (
             <Section title="Threat Intelligence">
               <div className="flex flex-wrap gap-2">
-                {v.has_exploit && (
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-orange-900/40 border border-orange-800/40 text-orange-300">
-                    ⚡ Known Exploit
-                  </span>
-                )}
-                {v.has_cisa_kev_exploit && (
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-red-900/40 border border-red-800/40 text-red-300">
-                    🔴 CISA KEV Listed
-                  </span>
-                )}
-                {v.epss_score != null && (
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-slate-700/60 border border-slate-600/40 text-slate-300">
-                    EPSS {(v.epss_score * 100).toFixed(1)}%
-                    {v.epss_percentile != null && ` · p${Math.round(v.epss_percentile * 100)}`}
-                  </span>
-                )}
-                {v.exploit_code_maturity && (
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-slate-700/60 border border-slate-600/40 text-slate-300">
-                    Maturity: {v.exploit_code_maturity}
-                  </span>
-                )}
+                <span className="text-xs px-2.5 py-1 rounded-full bg-orange-900/40 border border-orange-800/40 text-orange-300">
+                  ⚡ Known Exploit
+                </span>
               </div>
-              {v.kev_summary && (
-                <p className="text-xs text-slate-400 mt-2 leading-relaxed">{v.kev_summary}</p>
-              )}
             </Section>
           )}
 
@@ -347,6 +593,20 @@ function VulnRow({ v, onEdit, onDelete }: { v: any; onEdit: () => void; onDelete
                   ) : (
                     <p key={i} className="text-xs text-slate-400">{line.trim()}</p>
                   )
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* Technical Details (Task 4) */}
+          {hasExtendedDetails && (
+            <Section title="Technical Details">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                {extDetails.map(([label, value]) => (
+                  <div key={label}>
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{label}</p>
+                    <p className="text-xs text-white mt-0.5 break-words">{value}</p>
+                  </div>
                 ))}
               </div>
             </Section>
@@ -1083,12 +1343,22 @@ function SetupWorkspace({ onCreated }: { onCreated: (id: string) => void }) {
 export default function WorkspacePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const [tab, setTab] = useState<Tab>('vulnerabilities')
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['workspace', id],
     queryFn: () => standardizedApiClient.getProject(id!),
     enabled: !!id,
+  })
+
+  const updateStatus = useMutation({
+    mutationFn: (status: string) => standardizedApiClient.updateProject(id!, { status }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['workspace', id] })
+      toast.success('Status updated')
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to update status'),
   })
 
   if (!id) {
@@ -1130,7 +1400,17 @@ export default function WorkspacePage() {
             )}
           </div>
         </div>
-        {statusBadge(project.status)}
+        {/* Inline status select (Task 2) */}
+        <select
+          value={project.status || ''}
+          onChange={e => updateStatus.mutate(e.target.value)}
+          disabled={updateStatus.isPending}
+          className="shrink-0 bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500 disabled:opacity-50 cursor-pointer"
+        >
+          {PROJECT_STATUSES.map(s => (
+            <option key={s} value={s}>{s}</option>
+          ))}
+        </select>
       </div>
 
       {/* Tabs */}

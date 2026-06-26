@@ -10,7 +10,6 @@ urlpatterns = [
     path('projects/', project.GetAllProjects.as_view(), name='project-list'),
     path('dashboard/summary/', project.dashboard_summary, name='dashboard-summary'),
     path('projects/filter/', project.get_all_projects_filter, name='project-filter'),
-    path('projects/mine/', project.GetMyProjects.as_view(), name='project-mine'),
 
     # ========================================================================
     # PROJECTS - Item Operations
