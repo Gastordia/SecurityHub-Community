@@ -13,31 +13,30 @@ This is a single-tenant deployment: all data lives in one shared workspace (no o
 - **Multi-Project Support**: Manage vulnerabilities across multiple security assessment projects
 - **Status Tracking**: Track vulnerability status from discovery through remediation, with retest support
 
-### **Universal Scanner Integration**
-- **100+ Scanner Parser Support**: Import vulnerability data from a wide range of scanners, including Nessus, Burp Suite, Nmap, Acunetix, OWASP ZAP, Nuclei, OpenVAS, Qualys, Nexpose, AppSpider, and many more
+### **Scanner Integration**
+- **12 Built-in Scanner Parsers**: Import vulnerability data from Nessus, Burp Suite, Nmap, Acunetix, OWASP ZAP, Nuclei, OpenVAS, Qualys, Nexpose, AppSpider, SARIF, and Trivy
 - **Automated Data Normalization**: Convert diverse scanner formats into a unified, standardized schema
-- **Custom Parsers**: Define your own mapping-driven parser for scanners not supported out of the box
 
 ### **Professional Reporting**
-- **Multi-Format Reports**: Generate PDF, DOCX, and Excel reports
+- **Multi-Format Reports**: Generate PDF and DOCX reports
 - **Template Customization**: Design your own report templates using DOCX or HTML/CSS with dynamic content injection
-- **Dynamic Content**: Populate reports with POC images, vulnerability descriptions, and remediation recommendations
-- **Version Control**: Track template versions and usage
+- **Dynamic Content**: Populate reports with POC images, severity charts, vulnerability descriptions, and remediation recommendations
+- **Version Control**: Track and restore template versions
 
 ### **Vulnerability Library & Reference Data**
 - **VulnDB**: A read-only vulnerability template library, synced from a GitHub-hosted JSON source (admin-triggered) — speeds up manually adding common findings
 - **Project Types / Report Standards**: Same GitHub-sync pattern for configurable reference lists
-- **CWE Reference Data**: Periodically refreshed CWE catalog, source configurable via `CWE_DATA_GITHUB_URL`
+- **CWE Reference Data**: On-demand CWE catalog sync via admin action, source configurable via `CWE_DATA_GITHUB_URL`
 
 ## ✨ What Makes SecurityHub Special?
 
-### **1. Broad Scanner Compatibility**
-SecurityHub supports **100+ security scanners** out of the box. Whether you're using commercial tools like Nessus and Qualys, open-source tools like Nmap and Nuclei, or specialized scanners, SecurityHub can ingest and normalize the data automatically.
+### **1. Multi-Scanner Support**
+SecurityHub ships with parsers for 12 scanners covering the most common commercial and open-source tools — Nessus, Qualys, Burp Suite, Nmap, Nuclei, OWASP ZAP, OpenVAS, Acunetix, Nexpose, AppSpider, Trivy, and SARIF. All output is normalized into a single internal schema.
 
 ### **2. Flexible Template System**
 - Create custom report templates in familiar formats (DOCX, HTML/CSS)
-- Version control templates and track usage
-- Dynamically inject content, images, charts, and metadata
+- Version control templates with restore support
+- Dynamically inject content, images, severity charts, and metadata into generated reports
 
 ### **3. Modern, Extensible Architecture**
 - **API-First Design**: Full REST API with OpenAPI/Swagger documentation
@@ -53,12 +52,13 @@ SecurityHub supports **100+ security scanners** out of the box. Whether you're u
 ### What Community Edition does *not* include
 This is a single-tenant build: there's no Organization/multi-tenant data isolation, no customer-facing portal, and no granular role/capability-based access control — authorization is a simple staff/admin distinction (Django's `is_staff`/`is_superuser`). There's no threat-intelligence enrichment engine (CISA KEV/EPSS/NVD feeds) or asset-management module. If you need any of that, those are enterprise-tier features not present in this codebase.
 
-<br/><br/>
+<br/>
 
 [![Python Version](https://img.shields.io/badge/Python-3.9+-brightgreen)](https://www.python.org/downloads/release/python-391/)
 [![NodeJS Version](https://img.shields.io/badge/NodeJS-18+-brightgreen)](https://nodejs.org/en/download/package-manager)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -82,12 +82,12 @@ docker-compose logs -f
 **CORS**: The backend reads `CORS_ALLOWED_ORIGINS` (comma-separated list of origins). Set it in `.env`, e.g. `CORS_ALLOWED_ORIGINS=https://app.example.com`. See `env.example` for all available options.
 
 The application will be available at:
-- **Frontend**: http://localhost
-- **API**: http://localhost/api
-- **API Docs**: http://localhost/api/docs
+- **Frontend**: http://localhost:3000
+- **API**: http://localhost:3000/api
+- **API Docs**: http://localhost:3000/api/docs
 
-> [!Warning]
-> Please ensure to review the documentation for Security Configuration for ENV and other Installation methods.
+> [!WARNING]
+> Review `env.example` and the [Installation Guide](docs/INSTALLATION.md) before deploying to production — several security-sensitive settings (SECRET_KEY, ALLOWED_HOST, CORS, HTTPS cookie flags) must be set correctly.
 
 ## 📋 Features
 
@@ -95,21 +95,21 @@ The application will be available at:
 - **Centralized Database**: Maintain a comprehensive vulnerability database
 - **Multi-Project Support**: Manage vulnerabilities across multiple projects
 - **Status Tracking**: Track vulnerability status from discovery to remediation
-- **Retest Management**: Schedule and manage retest cycles
+- **Retest Management**: Track retest cycles per vulnerability instance
 
 ### Reporting
-- **PDF Reports**: Generate professional PDF reports
+- **PDF Reports**: Generate professional PDF reports (via WeasyPrint)
 - **DOCX Reports**: Create Word document reports with custom templates
-- **Excel Export**: Export vulnerability data to Excel
 - **Custom Templates**: Design your own report templates in DOCX or HTML/CSS
-- **Dynamic Content**: Add POC images, descriptions, and recommendations dynamically
+- **Dynamic Content**: Inject POC images, severity charts, descriptions, and recommendations
 
 ### Project Management
-- **Project Organization**: Manage all security projects in one place
+- **Project Organisation**: Manage all security projects in one place
 - **Schedule Management**: Track project start/end dates
+- **Scope Management**: Define and manage assessment scope per project
 
 ### Security Features
-- **API Security**: JWT authentication (httpOnly cookies), rate limiting, input validation
+- **API Security**: JWT authentication via httpOnly cookies, rate limiting, input validation
 - **Audit Logging**: Audit trail of key operations
 - **XSS/XXE Hardening**: `bleach` sanitization on rich-text fields, `defusedxml` for all XML parsing
 
@@ -126,19 +126,18 @@ The application will be available at:
 - **Build Tool**: Vite
 - **UI**: Tailwind CSS
 - **State Management**: Zustand
-- **HTTP Client**: Axios with React Query
+- **Server State**: TanStack Query (React Query v5)
 
 ### Infrastructure
 - **Containerization**: Docker with multi-stage builds
 - **Orchestration**: Docker Compose
-- **Web Server**: Nginx (reverse proxy)
+- **Web Server**: Nginx (reverse proxy + static file serving)
 - **CI/CD**: GitHub Actions
 
 ## 📚 Documentation
 
 - [Installation Guide](docs/INSTALLATION.md)
 - [API Documentation](docs/API.md)
-- [Docker Guide](DOCKER_BUILD_GUIDE.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 - [Security Policy](SECURITY.md)
 
@@ -156,8 +155,8 @@ poetry shell
 # Run migrations
 python securityhub/manage.py migrate
 
-# Create superuser
-python securityhub/manage.py createsuperuser
+# First-time setup (creates superuser, default project types, report standards)
+python securityhub/manage.py first_setup
 
 # Run development server
 python securityhub/manage.py runserver
@@ -171,7 +170,7 @@ cd frontend
 # Install dependencies
 npm install
 
-# Start development server
+# Start development server (port 5173)
 npm start
 
 # Build for production
@@ -182,7 +181,7 @@ npm run build
 
 ```bash
 # Backend tests
-python securityhub/manage.py test
+pytest
 
 # Frontend tests
 cd frontend && npm test
@@ -190,7 +189,7 @@ cd frontend && npm test
 
 ## 🐳 Docker
 
-### Build Images
+### Build & Run
 
 ```bash
 # Enable BuildKit for faster builds
@@ -200,14 +199,10 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 # Build all images
 docker-compose build
 
-# Build specific service
-docker-compose build securityhub-api
-docker-compose build securityhub-frontend
-```
+# Build a specific service
+docker-compose build securityhub
+docker-compose build nginx
 
-### Run Services
-
-```bash
 # Start all services
 docker-compose up -d
 
@@ -220,8 +215,6 @@ docker-compose down
 # Stop and remove volumes
 docker-compose down -v
 ```
-
-See [DOCKER_BUILD_GUIDE.md](DOCKER_BUILD_GUIDE.md) for detailed Docker documentation.
 
 ## 🔒 Security
 
@@ -238,8 +231,6 @@ See [SECURITY.md](SECURITY.md) for our security policy.
 
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-### Development Setup
-
 1. Create a feature branch (`git checkout -b feature/amazing-feature`)
 2. Make your changes
 3. Write/update tests
@@ -253,12 +244,14 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 - Built with [Django](https://www.djangoproject.com/)
 - Frontend powered by [React](https://react.dev/)
-- UI components from [Material Tailwind](https://www.material-tailwind.com/)
+- Styled with [Tailwind CSS](https://tailwindcss.com/)
 - Icons from [Heroicons](https://heroicons.com/)
+- PDF generation via [WeasyPrint](https://weasyprint.org/)
 
 ## 📞 Support
 
 - **Documentation**: [docs/](docs/)
+- **Issues**: [GitHub Issues](../../issues)
 - **Maintainer**: WisePoo
 
 ## ✅ What's Implemented
@@ -266,12 +259,14 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 - **Authentication** — JWT auth via httpOnly cookies, simple staff/admin permission model
 - **Vulnerability Management** — full CRUD, status tracking, retest support, multi-project
 - **Project Management** — project lifecycle, scope management
-- **Scanner Integration** — 100+ scanner parsers (Nessus, Burp, Nmap, Acunetix, ZAP, Nuclei, OpenVAS, Qualys, etc.), plus a custom mapping-driven parser builder
-- **Reporting** — PDF, DOCX, and Excel generation with a versioned template system (components, schema validation, charts)
-- **Vulnerability Library / Project Types / Report Standards** — read-only reference data, synced from a configurable GitHub source
+- **Scanner Integration** — 12 built-in parsers (Nessus, Burp Suite, Nmap, Acunetix, ZAP, Nuclei, OpenVAS, Qualys, Nexpose, AppSpider, SARIF, Trivy)
+- **Reporting** — PDF and DOCX generation with a versioned template system and dynamic severity charts
+- **Vulnerability Library / Project Types / Report Standards** — read-only reference data, synced on-demand from a configurable GitHub source
 - **API** — full REST API with OpenAPI/Swagger docs
 - **Docker Deployment** — full containerization with Docker Compose
 
 This is a single-tenant, single-workspace deployment — see [What Community Edition does *not* include](#what-community-edition-does-not-include) above for the enterprise features intentionally left out of this build.
 
-**SecurityHub Community Edition** — Security Vulnerability Management Platform
+---
+
+**SecurityHub Community Edition** — Self-Hosted Vulnerability Management Platform
