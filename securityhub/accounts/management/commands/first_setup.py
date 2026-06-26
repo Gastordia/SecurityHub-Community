@@ -149,7 +149,7 @@ class Command(BaseCommand):
             if self.verbosity >= 1:
                 self.stdout.write(self.style.WARNING('Generated random password. Make sure to save it!'))
         else:
-            password = options['password'] or os.getenv('SETUP_PASSWORD', DEFAULT_PASSWORD)
+            password = options['password'] or os.getenv('SETUP_PASSWORD') or DEFAULT_PASSWORD
 
         self.validate_email(email)
         if not force:

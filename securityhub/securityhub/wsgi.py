@@ -12,9 +12,11 @@ from django.core.wsgi import get_wsgi_application
 from .init import current_version
 
 
-BANNER, COPYRIGHT = current_version()
-
-
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'securityhub.settings')
 application = get_wsgi_application()
-print(BANNER+ COPYRIGHT)
+
+# Print banner only in the master process (worker_id is absent), not in each forked worker.
+if not os.environ.get('_SECURITYHUB_BANNER_PRINTED'):
+    os.environ['_SECURITYHUB_BANNER_PRINTED'] = '1'
+    BANNER, COPYRIGHT = current_version()
+    print(BANNER + COPYRIGHT)

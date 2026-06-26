@@ -56,7 +56,7 @@ The installer detects your operating system, installs Docker if needed, and walk
 ```bash
 cp env.example .env      # copy the config template
 nano .env                # set SECRET_KEY, domain, and credentials
-docker-compose up -d
+docker compose up -d
 ```
 
 Once running, the application is available at:

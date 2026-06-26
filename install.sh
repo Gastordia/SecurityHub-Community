@@ -69,7 +69,7 @@ print(''.join(secrets.choice(a) for _ in range(20)))" 2>/dev/null || \
                  openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c20; }
 
 # ── Banner ────────────────────────────────────────────────────────────────────
-clear
+[[ -t 1 ]] && clear
 printf "\n${BOLD}${CYAN}"
 cat <<'BANNER'
   ███████╗███████╗ ██████╗██╗   ██╗██████╗ ██╗████████╗██╗   ██╗██╗  ██╗██╗   ██╗██████╗

@@ -10,6 +10,8 @@ services:
     ports:
       - 3000:80
       - 8443:443
+      # NOTE: If you change the HTTPS host port (8443), also update the redirect
+      # in scripts/nginx.conf (the `return 301 https://$host:8443$request_uri;` line).
     restart: unless-stopped
     depends_on:
       securityhub:
@@ -77,8 +79,9 @@ services:
       - media_volume:/home/securityhub/securityhub/securityhub/media/
     networks:
       - securityhub
+    restart: unless-stopped
     healthcheck:
-      test: [ "CMD-SHELL", "curl --fail http://localhost:8000/api/config/ping/ || exit 1" ]
+      test: [ "CMD-SHELL", "curl --fail -H 'X-Forwarded-Proto: https' http://localhost:8000/api/config/ping/ || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3

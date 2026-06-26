@@ -14,8 +14,7 @@ fi
 echo "PostgreSQL ready."
 
 echo "Checking database ${POSTGRES_DB}..."
-PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -U $POSTGRES_USER -lqt | cut -d \| -f 1 | grep -qw $POSTGRES_DB
-if [ $? -ne 0 ]; then
+if ! PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -U $POSTGRES_USER -lqt | cut -d \| -f 1 | grep -qw $POSTGRES_DB; then
   echo "Database ${POSTGRES_DB} not found. Exiting."
   exit 1
 fi
@@ -28,7 +27,7 @@ echo "Migrations done."
 SETUP_FLAG="${HOME}/.securityhub/first_setup_done"
 if [ ! -f "${SETUP_FLAG}" ]; then
   echo "Running first-time setup..."
-  python3 manage.py first_setup
+  python3 manage.py first_setup --skip-gtk-check
   python3 manage.py create_default_templates || true
   mkdir -p "$(dirname ${SETUP_FLAG})"
   touch "${SETUP_FLAG}"

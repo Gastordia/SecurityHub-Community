@@ -154,6 +154,7 @@ pnpm-lock.yaml
 !CONTRIBUTING.md
 !SECURITY.md
 !CODE_OF_CONDUCT.md
+!docs/INSTALLATION.md
 
 # Analysis, summary, and report markdown files
 *_ANALYSIS*.md
