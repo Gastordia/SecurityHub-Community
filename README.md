@@ -1,65 +1,96 @@
-# SecurityHub
+# SecurityHub Community Edition
 
-## 🎯 What is SecurityHub?
+## Overview
 
-**SecurityHub Community Edition** is a self-hosted vulnerability management and reporting platform for security teams and penetration testers. Built with Django and React, it streamlines the vulnerability lifecycle from scanner import through professional report generation.
+SecurityHub Community Edition is a self-hosted vulnerability management and reporting platform for security teams and penetration testers. Built on Django and React, it covers the vulnerability lifecycle from scanner import through professional report generation.
 
-This is a single-tenant deployment: all data lives in one shared workspace (no organizations/customer isolation), with a simple admin/staff permission model (no granular RBAC).
+This is a single-tenant deployment: all data lives in one shared workspace with no multi-tenant isolation. Authorization uses Django's standard `is_staff` / `is_superuser` distinction — there is no granular role-based access control.
 
-## 🚀 What Does SecurityHub Do?
+---
 
-### **Vulnerability Lifecycle Management**
-- **Centralized Vulnerability Database**: Searchable database of vulnerabilities with CVE, CWE, and CVSS classifications
-- **Multi-Project Support**: Manage vulnerabilities across multiple security assessment projects
-- **Status Tracking**: Track vulnerability status from discovery through remediation, with retest support
+## Features
 
-### **Scanner Integration**
-- **12 Built-in Scanner Parsers**: Import vulnerability data from Nessus, Burp Suite, Nmap, Acunetix, OWASP ZAP, Nuclei, OpenVAS, Qualys, Nexpose, AppSpider, SARIF, and Trivy
-- **Automated Data Normalization**: Convert diverse scanner formats into a unified, standardized schema
+### Vulnerability Management
 
-### **Professional Reporting**
-- **Multi-Format Reports**: Generate PDF and DOCX reports
-- **Template Customization**: Design your own report templates using DOCX or HTML/CSS with dynamic content injection
-- **Dynamic Content**: Populate reports with POC images, severity charts, vulnerability descriptions, and remediation recommendations
-- **Version Control**: Track and restore template versions
+- Searchable vulnerability database with CVE, CWE, and CVSS classifications
+- Multi-project support: manage findings across independent security assessments
+- Status tracking from discovery through remediation, with retest cycle support
+- Triage workflow: mark findings as false positive, suppressed, or verified; record risk acceptance with a reason
+- Bulk project delete via a single `DELETE` request with a JSON array of IDs
+- Login with either username or email address
 
-### **Vulnerability Library & Reference Data**
-- **VulnDB**: A read-only vulnerability template library, synced from a GitHub-hosted JSON source (admin-triggered) — speeds up manually adding common findings
-- **Project Types / Report Standards**: Same GitHub-sync pattern for configurable reference lists
-- **CWE Reference Data**: On-demand CWE catalog sync via admin action, source configurable via `CWE_DATA_GITHUB_URL`
+### Finding Details
 
-## ✨ What Makes SecurityHub Special?
+- **SAST tracking**: source file, source line, sink file, sink line, and tainted-flow flag (populated by the SARIF parser)
+- **Container and Kubernetes context**: cluster, namespace, workload, image, and image-digest fields (populated by the Trivy parser)
+- **SCA / dependency intelligence**: package name, version, type, CPE, installed version, and vulnerable version ranges (populated by Trivy and SARIF parsers)
+- **Compliance mapping**: NIST 800-53, OWASP MASVS, DISA STIG, and arbitrary compliance-framework fields
+- **MITRE ATT&CK**: tactic and technique storage per finding
+- **Network context**: IP addresses, hostnames, ports, services, protocols, and endpoints captured from scanner output
 
-### **1. Multi-Scanner Support**
-SecurityHub ships with parsers for 12 scanners covering the most common commercial and open-source tools — Nessus, Qualys, Burp Suite, Nmap, Nuclei, OWASP ZAP, OpenVAS, Acunetix, Nexpose, AppSpider, Trivy, and SARIF. All output is normalized into a single internal schema.
+### Scanner Integration
 
-### **2. Flexible Template System**
-- Create custom report templates in familiar formats (DOCX, HTML/CSS)
-- Version control templates with restore support
-- Dynamically inject content, images, severity charts, and metadata into generated reports
+12 built-in parsers covering the most common commercial and open-source tools:
 
-### **3. Modern, Extensible Architecture**
-- **API-First Design**: Full REST API with OpenAPI/Swagger documentation
-- **Modern Tech Stack**: Django 4.2+, React 18, TypeScript, PostgreSQL
-- **Docker-Ready**: Complete containerization with Docker Compose
-- **Configurable**: Upload limits, pagination, rate limits, JWT lifetimes, password policy, cache backend, and branding are all environment-configurable — see [env.example](env.example)
+| Parser | Tool |
+|--------|------|
+| Nessus | Tenable Nessus (`.nessus` XML and CSV) |
+| Burp Suite | Burp Suite Pro XML export |
+| Nmap | Nmap XML (`-oX`) |
+| Acunetix | Acunetix XML export |
+| OWASP ZAP | ZAP XML report |
+| Nuclei | Nuclei JSON output |
+| OpenVAS | OpenVAS XML report |
+| Qualys | Qualys XML export |
+| Nexpose | Rapid7 Nexpose XML |
+| AppSpider | Rapid7 AppSpider XML |
+| SARIF | SARIF 2.1.0 (any SAST tool) |
+| Trivy | Trivy JSON (containers, filesystems) |
 
-### **4. Open Source & Self-Hosted**
-- **Open Source**: Full source code access for customization and security audits
-- **Self-Hosted**: Complete control over your data and infrastructure
-- **No Vendor Lock-in**
+All scanner output is normalized into a single internal schema.
 
-### What Community Edition does *not* include
-This is a single-tenant build: there's no Organization/multi-tenant data isolation, no customer-facing portal, and no granular role/capability-based access control — authorization is a simple staff/admin distinction (Django's `is_staff`/`is_superuser`). There's no threat-intelligence enrichment engine (CISA KEV/EPSS/NVD feeds) or asset-management module. If you need any of that, those are enterprise-tier features not present in this codebase.
+### Reporting
 
-<br/>
+- PDF reports via WeasyPrint
+- DOCX reports via docxtpl with custom templates
+- Versioned template system with restore support
+- Dynamic content injection: POC images, severity charts, descriptions, and remediation recommendations
+- Scoped short-lived JWT issued at report generation time for secure server-side image fetching
 
-[![Python Version](https://img.shields.io/badge/Python-3.9+-brightgreen)](https://www.python.org/downloads/release/python-391/)
-[![NodeJS Version](https://img.shields.io/badge/NodeJS-18+-brightgreen)](https://nodejs.org/en/download/package-manager)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
+### Project Management
 
-## 🚀 Quick Start
+- Full project lifecycle management with start/end dates and status tracking
+- Scope management per project; Nmap XML scope auto-import endpoint
+- Project status auto-progression as finding statuses change
+
+### Vulnerability Library and Reference Data
+
+- VulnDB: read-only vulnerability template library synced on demand from a configurable GitHub source — speeds up manual finding entry
+- Project types and report standards use the same GitHub-sync pattern
+- CWE reference data synced via admin action; source URL configurable via `CWE_DATA_GITHUB_URL`
+
+### API and Documentation
+
+- Full REST API with OpenAPI/Swagger documentation at `/api/docs/` and `/api/redoc/`
+- JWT authentication via httpOnly cookies with configurable token lifetimes
+- Rate limiting, input validation, and audit logging
+
+---
+
+## What Community Edition Does Not Include
+
+- Multi-tenant data isolation (no Organization model)
+- Customer-facing portal
+- Granular role-based access control
+- Threat-intelligence enrichment (CISA KEV/EPSS/NVD live feeds)
+- CPE catalog sync (NVD API)
+- Asset management module
+
+These are enterprise-tier features absent from this codebase.
+
+---
+
+## Quick Start
 
 ### Prerequisites
 
@@ -69,7 +100,7 @@ This is a single-tenant build: there's no Organization/multi-tenant data isolati
 ### Installation
 
 ```bash
-# Automated install (detects OS, installs Docker, prompts for config):
+# Automated install (detects OS, installs Docker, prompts for configuration):
 bash install.sh
 
 # — or manually —
@@ -79,209 +110,131 @@ docker-compose up -d
 docker-compose logs -f
 ```
 
-**CORS**: The backend reads `CORS_ALLOWED_ORIGINS` (comma-separated list of origins). Set it in `.env`, e.g. `CORS_ALLOWED_ORIGINS=https://app.example.com`. See `env.example` for all available options.
-
 The application will be available at:
-- **Frontend**: http://localhost:3000
-- **API**: http://localhost:3000/api
-- **API Docs**: http://localhost:3000/api/docs
 
-> [!WARNING]
-> Review `env.example` and the [Installation Guide](docs/INSTALLATION.md) before deploying to production — several security-sensitive settings (SECRET_KEY, ALLOWED_HOST, CORS, HTTPS cookie flags) must be set correctly.
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| API | http://localhost:3000/api |
+| API Documentation | http://localhost:3000/api/docs |
 
-## 📋 Features
+> **Production note**: Review `env.example` and [docs/INSTALLATION.md](docs/INSTALLATION.md) before deploying. Several security-sensitive settings (SECRET_KEY, ALLOWED_HOST, CORS, HTTPS cookie flags) must be configured correctly.
 
-### Vulnerability Management
-- **Centralized Database**: Maintain a comprehensive vulnerability database
-- **Multi-Project Support**: Manage vulnerabilities across multiple projects
-- **Status Tracking**: Track vulnerability status from discovery to remediation
-- **Retest Management**: Track retest cycles per vulnerability instance
-- **Triage Workflow**: Mark findings as false positive, suppressed, or verified; record risk acceptance with a reason
-- **Bulk Operations**: Bulk-delete projects via a single `DELETE` request with a JSON array of IDs
-- **Login Flexibility**: Authenticate with either username or email address
+**CORS**: The backend reads `CORS_ALLOWED_ORIGINS` (comma-separated list of origins). Set it in `.env`, for example: `CORS_ALLOWED_ORIGINS=https://app.example.com`. See `env.example` for all available options.
 
-### Finding Details
-- **SAST Support**: Source/sink file + line number tracking, tainted-flow flag (populated by the SARIF parser)
-- **Container & Kubernetes Context**: Cluster, namespace, workload, image, and image-digest fields (populated by the Trivy parser)
-- **SCA / Dependency Intelligence**: Package name, version, type, CPE, installed/vulnerable versions (populated by Trivy and SARIF parsers)
-- **Compliance Mapping**: NIST 800-53, OWASP MASVS, DISA STIG, and arbitrary compliance-framework fields
-- **MITRE ATT&CK**: Tactic and technique storage on each finding
-- **Network Context**: IP addresses, hostnames, ports, services, protocols, and endpoints captured from scanner output
+---
 
-### Reporting
-- **PDF Reports**: Generate professional PDF reports (via WeasyPrint)
-- **DOCX Reports**: Create Word document reports with custom templates
-- **Custom Templates**: Design your own report templates in DOCX or HTML/CSS
-- **Dynamic Content**: Inject POC images, severity charts, descriptions, and recommendations
-
-### Project Management
-- **Project Organisation**: Manage all security projects in one place
-- **Schedule Management**: Track project start/end dates
-- **Scope Management**: Define and manage assessment scope per project
-- **Scope Auto-Import**: Import scope from an Nmap XML file via the `/api/project/projects/:id/import-scope/` endpoint
-- **Status Auto-Progression**: Project status updates automatically as findings change
-
-### Security Features
-- **API Security**: JWT authentication via httpOnly cookies, rate limiting, input validation
-- **Scoped Report Token**: Short-lived JWT issued at report generation time for secure image fetching (separate from the session token)
-- **Audit Logging**: Audit trail of key operations
-- **XSS/XXE Hardening**: `bleach` sanitization on rich-text fields, `defusedxml` for all XML parsing
-
-## 🏗️ Architecture
+## Architecture
 
 ### Backend
-- **Framework**: Django 4.2+ with Django REST Framework
-- **Database**: PostgreSQL (SQLite fallback for local dev)
-- **Cache**: In-memory by default; optionally Redis via `REDIS_URL` (recommended for multi-worker deployments)
-- **API**: RESTful API with OpenAPI/Swagger documentation
+
+- **Framework**: Django 4.2 with Django REST Framework
+- **Database**: PostgreSQL (SQLite fallback for local development)
+- **Cache**: In-memory by default; Redis recommended when running more than one worker (`REDIS_URL`)
+- **Auth**: JWT via httpOnly cookies (SimpleJWT); lifetimes configurable
 
 ### Frontend
+
 - **Framework**: React 18 with TypeScript
-- **Build Tool**: Vite
+- **Build tool**: Vite
 - **UI**: Tailwind CSS
-- **State Management**: Zustand
-- **Server State**: TanStack Query (React Query v5)
+- **State**: Zustand for global state; TanStack Query for server-state caching
 
 ### Infrastructure
+
 - **Containerization**: Docker with multi-stage builds
 - **Orchestration**: Docker Compose
-- **Web Server**: Nginx (reverse proxy + static file serving)
-- **CI/CD**: GitHub Actions
+- **Web server**: Nginx (reverse proxy and static file serving)
 
-## 📚 Documentation
+---
 
-- [Installation Guide](docs/INSTALLATION.md)
-- [API Documentation](docs/API.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
-- [Security Policy](SECURITY.md)
+## Development
 
-## 🛠️ Development
-
-### Backend Development
+### Backend
 
 ```bash
-# Install dependencies
 poetry install
-
-# Activate virtual environment
 poetry shell
 
-# Run migrations
 python securityhub/manage.py migrate
 
-# First-time setup (creates superuser, default project types, report standards)
+# First-time setup: creates superuser, default project types, and report standards
 python securityhub/manage.py first_setup
 
-# Run development server
 python securityhub/manage.py runserver
 ```
 
-### Frontend Development
+### Frontend
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server (port 5173)
-npm start
-
-# Build for production
-npm run build
+npm start           # dev server on port 5173
+npm run build       # production build
 ```
 
 ### Running Tests
 
 ```bash
-# Backend tests
+# Backend
 pytest
 
-# Frontend tests
+# Frontend
 cd frontend && npm test
 ```
 
-## 🐳 Docker
+---
 
-### Build & Run
+## Docker
 
 ```bash
-# Enable BuildKit for faster builds
 export DOCKER_BUILDKIT=1
 export COMPOSE_DOCKER_CLI_BUILD=1
 
-# Build all images
 docker-compose build
-
-# Build a specific service
-docker-compose build securityhub
-docker-compose build nginx
-
-# Start all services
 docker-compose up -d
-
-# View logs
 docker-compose logs -f
-
-# Stop services
 docker-compose down
-
-# Stop and remove volumes
-docker-compose down -v
 ```
 
-## 🔒 Security
+---
 
-SecurityHub takes security seriously. If you discover a security vulnerability, please:
+## Security
 
-1. **Do not** open a public issue
-2. Report it privately via [GitHub's private security advisory feature](../../security/advisories/new) for this repository
-3. Include steps to reproduce the vulnerability
-4. Allow time for the issue to be addressed before disclosure
+If you discover a vulnerability, do not open a public issue. Report it privately via [GitHub's private security advisory feature](../../security/advisories/new). Include steps to reproduce and allow time for the issue to be addressed before disclosure.
 
-See [SECURITY.md](SECURITY.md) for our security policy.
+See [SECURITY.md](SECURITY.md) for the full security policy.
 
-## 🤝 Contributing
+---
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+## Contributing
 
-1. Create a feature branch (`git checkout -b feature/amazing-feature`)
-2. Make your changes
-3. Write/update tests
-4. Commit your changes (`git commit -m 'Add amazing feature'`)
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-## 📝 License
+---
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+## License
 
-## 🙏 Acknowledgments
+MIT License — see [LICENSE.md](LICENSE.md) for details.
 
-- Built with [Django](https://www.djangoproject.com/)
-- Frontend powered by [React](https://react.dev/)
-- Styled with [Tailwind CSS](https://tailwindcss.com/)
-- Icons from [Heroicons](https://heroicons.com/)
-- PDF generation via [WeasyPrint](https://weasyprint.org/)
+---
 
-## 📞 Support
+## Acknowledgments
 
-- **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](../../issues)
-- **Maintainer**: WisePoo
+- [Django](https://www.djangoproject.com/) and [Django REST Framework](https://www.django-rest-framework.org/)
+- [React](https://react.dev/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [WeasyPrint](https://weasyprint.org/) for PDF generation
+- [Heroicons](https://heroicons.com/)
 
-## ✅ What's Implemented
+---
 
-- **Authentication** — JWT auth via httpOnly cookies, login with username or email, simple staff/admin permission model
-- **Vulnerability Management** — full CRUD, status tracking, retest support, multi-project, triage workflow (false positive / suppressed / verified / risk acceptance)
-- **Rich Finding Fields** — SAST source/sink tracking (SARIF), container/Kubernetes context (Trivy), SCA dependency intelligence (Trivy/SARIF), compliance mapping (NIST 800-53, MASVS, DISA STIG), MITRE ATT&CK, network context
-- **Project Management** — project lifecycle, scope management, Nmap XML scope import, auto status progression, bulk project delete
-- **Scanner Integration** — 12 built-in parsers (Nessus, Burp Suite, Nmap, Acunetix, ZAP, Nuclei, OpenVAS, Qualys, Nexpose, AppSpider, SARIF, Trivy)
-- **Reporting** — PDF and DOCX generation with a versioned template system and dynamic severity charts; scoped short-lived JWT for secure report image fetching
-- **Vulnerability Library / Project Types / Report Standards** — read-only reference data, synced on-demand from a configurable GitHub source
-- **API** — full REST API with OpenAPI/Swagger docs
-- **Docker Deployment** — full containerization with Docker Compose
-
-This is a single-tenant, single-workspace deployment — see [What Community Edition does *not* include](#what-community-edition-does-not-include) above for the enterprise features intentionally left out of this build.
+[![Python Version](https://img.shields.io/badge/Python-3.9+-brightgreen)](https://www.python.org/downloads/release/python-391/)
+[![NodeJS Version](https://img.shields.io/badge/NodeJS-18+-brightgreen)](https://nodejs.org/en/download/package-manager)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 
 ---
 
 **SecurityHub Community Edition** — Self-Hosted Vulnerability Management Platform
+Maintainer: WisePoo | [Issues](../../issues) | [Documentation](docs/)
