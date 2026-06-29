@@ -279,9 +279,11 @@ class VulnerableInstanceSerializer(serializers.ModelSerializer):
         # Create instance with vulnerabilityid and project
         instance = VulnerableInstance(**validated_data)
         if vulnerabilityid:
-            instance.vulnerabilityid_id = vulnerabilityid
+            # PrimaryKeyRelatedField resolves to a model instance during is_valid();
+            # assign the object directly so Django extracts the PK correctly.
+            instance.vulnerabilityid_id = vulnerabilityid.pk if hasattr(vulnerabilityid, 'pk') else vulnerabilityid
         if project:
-            instance.project_id = project
+            instance.project_id = project.pk if hasattr(project, 'pk') else project
         instance.save()
         return instance
     
