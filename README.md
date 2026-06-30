@@ -71,6 +71,26 @@ For production, point your domain's DNS at the host and set `ALLOWED_HOST`, `COR
 
 ---
 
+## Uninstalling
+
+Removes only what the installer created — source code, Docker, Node.js, and system packages are never touched.
+
+```bash
+bash uninstall.sh
+```
+
+**Options:**
+
+| Flag | Effect |
+|------|--------|
+| `--keep-data` | Preserve the database (Docker volume or PostgreSQL DB) |
+| `--keep-env` | Leave the `.env` file in place |
+| `--yes` | Skip the confirmation prompt |
+
+Uploaded files in `securityhub/media/` are always left intact regardless of flags.
+
+---
+
 ## Development setup
 
 **Backend:**
