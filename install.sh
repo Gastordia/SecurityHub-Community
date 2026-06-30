@@ -26,6 +26,22 @@ error()   { printf "${RED}  ✘ %s${NC}\n" "$*" >&2; }
 die()     { error "$*"; exit 1; }
 hr()      { printf "${DIM}%s${NC}\n" "──────────────────────────────────────────────────────────────────────────────"; }
 
+# ── Error trap — fires on any unhandled command failure (set -e) ──────────────
+_on_error() {
+  local line="${1:-?}"
+  printf "\n${RED}${BOLD}  ✘ Installer failed at line ${line}.${NC}\n"
+  printf "  Check the output above for details.\n"
+  printf "  Fix the issue then re-run: ${BOLD}bash install.sh${NC}\n\n"
+}
+trap '_on_error $LINENO' ERR
+
+# ── WSL detection ─────────────────────────────────────────────────────────────
+IS_WSL=false
+if grep -qiE "microsoft|wsl" /proc/version 2>/dev/null || \
+   [[ -n "${WSL_DISTRO_NAME:-}" ]] || [[ -n "${WSLENV:-}" ]]; then
+  IS_WSL=true
+fi
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/.env"
 NON_INTERACTIVE=false
@@ -40,14 +56,14 @@ prompt_val() {
     printf "  ${BOLD}%s${NC}" "$question"
     [[ -n "$default" ]] && printf " ${DIM}[press Enter to auto-generate]${NC}"
     printf ": "
-    read -rs REPLY_VAL; echo
+    read -rs REPLY_VAL || REPLY_VAL=""; echo
   else
     printf "  ${BOLD}%s${NC}" "$question"
     [[ -n "$default" ]] && printf " ${DIM}[${default}]${NC}"
     printf ": "
-    read -r REPLY_VAL
+    read -r REPLY_VAL || REPLY_VAL=""
   fi
-  [[ -z "$REPLY_VAL" ]] && REPLY_VAL="$default"
+  if [[ -z "$REPLY_VAL" ]]; then REPLY_VAL="$default"; fi
 }
 
 prompt_yn() {
@@ -56,7 +72,7 @@ prompt_yn() {
   if [[ "$NON_INTERACTIVE" == "true" ]]; then [[ "$default" == "y" ]] && return 0 || return 1; fi
   local hint; [[ "$default" == "y" ]] && hint="Y/n" || hint="y/N"
   printf "  ${BOLD}%s${NC} ${DIM}[%s]${NC}: " "$question" "$hint"
-  read -r _yn; _yn="${_yn:-$default}"
+  read -r _yn || _yn=""; _yn="${_yn:-$default}"
   [[ "${_yn,,}" == "y" || "${_yn,,}" == "yes" ]]
 }
 
@@ -98,7 +114,7 @@ if [[ "$NON_INTERACTIVE" == "true" ]]; then
 else
   while true; do
     printf "  ${BOLD}Choice${NC} ${DIM}[1]${NC}: "
-    read -r _choice
+    read -r _choice || _choice=""
     case "${_choice:-1}" in
       1|docker)    DEPLOY_MODE="docker";    break ;;
       2|baremetal|bare-metal|bare) DEPLOY_MODE="baremetal"; break ;;
@@ -325,18 +341,34 @@ if [[ "$DEPLOY_MODE" == "docker" ]]; then
     esac
   fi
 
-  if [[ "$OS_TYPE" != "macos" ]] && ! groups | grep -q docker; then
+  if [[ "$OS_TYPE" != "macos" ]] && ! groups 2>/dev/null | grep -q docker; then
     warn "Adding ${USER} to docker group (takes effect after next login)."
-    sudo usermod -aG docker "$USER" || true
+    sudo usermod -aG docker "$USER" 2>/dev/null || true
   fi
 
   if ! $DOCKER_CMD info &>/dev/null 2>&1; then
+    if [[ "$IS_WSL" == "true" ]]; then
+      printf "\n"
+      error "Docker daemon is not running."
+      printf "\n  ${BOLD}WSL detected.${NC} Docker needs to be running. Fix this with one of:\n\n"
+      printf "  ${BOLD}Option 1 — Docker Desktop (recommended):${NC}\n"
+      printf "    Open Docker Desktop on Windows → Settings → Resources\n"
+      printf "    → WSL Integration → enable for ${BOLD}${WSL_DISTRO_NAME:-this distro}${NC}\n"
+      printf "    Then restart Docker Desktop and re-run this script.\n\n"
+      printf "  ${BOLD}Option 2 — Docker Engine inside WSL:${NC}\n"
+      printf "    ${DIM}sudo service docker start${NC}\n"
+      printf "    Then re-run: ${BOLD}bash install.sh${NC}\n\n"
+      exit 1
+    fi
     info "Starting Docker daemon..."
-    if command -v systemctl &>/dev/null; then sudo systemctl start docker
-    elif command -v service &>/dev/null; then sudo service docker start
+    if command -v systemctl &>/dev/null && systemctl list-units --type=service &>/dev/null 2>&1; then
+      sudo systemctl start docker 2>/dev/null || true
+    elif command -v service &>/dev/null; then
+      sudo service docker start 2>/dev/null || true
     fi
     sleep 3
-    $DOCKER_CMD info &>/dev/null 2>&1 || die "Docker daemon not running. Start it and re-run."
+    $DOCKER_CMD info &>/dev/null 2>&1 || \
+      die "Docker daemon is not running. Start it ('sudo systemctl start docker' or 'sudo service docker start') then re-run."
   fi
   success "Docker is running."
 
@@ -368,7 +400,7 @@ SETUP_MODE="quick"
 if [[ "$NON_INTERACTIVE" != "true" ]]; then
   while true; do
     printf "  ${BOLD}Choice${NC} ${DIM}[1]${NC}: "
-    read -r _sc
+    read -r _sc || _sc=""
     case "${_sc:-1}" in
       1|quick)  SETUP_MODE="quick";  break ;;
       2|custom) SETUP_MODE="custom"; break ;;
@@ -541,7 +573,18 @@ else
   WHITELIST_VAL='["http://127.0.0.1"]'
 fi
 
-ALLOWED_HOST_VAL='["'"$DOMAIN"'","localhost"]'
+ALLOWED_HOST_VAL='["'"$DOMAIN"'","localhost","127.0.0.1"]'
+
+# Build CORS/CSRF origin list.
+# In Docker mode the browser hits nginx on the mapped port (3000→HTTP redirect,
+# 8443→HTTPS). Always include port-qualified localhost URLs so local/WSL installs
+# work without CORS errors, even when the user typed a bare hostname.
+if [[ "$DEPLOY_MODE" == "docker" ]]; then
+  CORS_ORIGINS="${BASE_URL},https://localhost:8443,http://localhost:3000"
+  # If the user's domain is not localhost, that's already in BASE_URL; nothing extra needed.
+else
+  CORS_ORIGINS="${BASE_URL}"
+fi
 
 cat > "$ENV_FILE" <<EOF
 # SecurityHub Community Edition — generated by install.sh on $(date -u '+%Y-%m-%dT%H:%M:%SZ')
@@ -556,8 +599,8 @@ INTERNAL_BASE_URL=${INTERNAL_URL}
 SECRET_KEY=${GENERATED_KEY}
 DEBUG=False
 ALLOWED_HOST=${ALLOWED_HOST_VAL}
-CORS_ALLOWED_ORIGINS=${BASE_URL}
-CSRF_TRUSTED_ORIGINS=${BASE_URL}
+CORS_ALLOWED_ORIGINS=${CORS_ORIGINS}
+CSRF_TRUSTED_ORIGINS=${CORS_ORIGINS}
 WHITELIST_IP=${WHITELIST_VAL}
 FRONTEND_URL=${BASE_URL}
 USER_TIME_ZONE=${TZ_VAL}
@@ -661,19 +704,34 @@ if [[ "$DEPLOY_MODE" == "docker" ]]; then
   $COMPOSE_CMD up -d
 
   info "Waiting for backend to become healthy (up to 3 min)..."
-  WAIT=0; MAX=180
+  WAIT=0; MAX=180; BACKEND_HEALTHY=false
   SH_CONTAINER_ID=""
   until [[ $WAIT -ge $MAX ]]; do
     SH_CONTAINER_ID="$($COMPOSE_CMD ps -q securityhub 2>/dev/null | head -1)"
     if [[ -n "$SH_CONTAINER_ID" ]]; then
       STATUS="$($DOCKER_CMD inspect --format='{{.State.Health.Status}}' "$SH_CONTAINER_ID" 2>/dev/null || true)"
-      [[ "$STATUS" == "healthy" ]] && break
+      if [[ "$STATUS" == "healthy" ]]; then
+        BACKEND_HEALTHY=true; break
+      elif [[ "$STATUS" == "unhealthy" ]]; then
+        printf "                              \r"
+        error "Backend container is unhealthy."
+        printf "\n  ${BOLD}Diagnose with:${NC}\n"
+        printf "    ${DIM}${COMPOSE_CMD} logs securityhub${NC}\n\n"
+        die "Startup failed."
+      fi
     fi
-    printf "    ${DIM}waiting... (%ds)${NC}\r" "$WAIT"
+    printf "    ${DIM}waiting... (%ds / %ds)${NC}\r" "$WAIT" "$MAX"
     sleep 5; (( WAIT += 5 ))
   done
-  printf "                              \r"
-  success "Services running."
+  printf "                                          \r"
+  if [[ "$BACKEND_HEALTHY" != "true" ]]; then
+    error "Backend did not become healthy within ${MAX}s."
+    printf "\n  ${BOLD}Diagnose with:${NC}\n"
+    printf "    ${DIM}${COMPOSE_CMD} logs securityhub${NC}\n"
+    printf "    ${DIM}${COMPOSE_CMD} ps${NC}\n\n"
+    die "Startup timed out."
+  fi
+  success "All containers are healthy."
 
 else
   # ── Bare-metal path ───────────────────────────────────────────────────────
@@ -886,14 +944,48 @@ else
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
+# Post-startup verification
+# ══════════════════════════════════════════════════════════════════════════════
+if [[ "$DEPLOY_MODE" == "docker" ]]; then
+  info "Verifying app is reachable..."
+  _check_url="https://localhost:8443/api/config/ping/"
+  _http_code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 10 "$_check_url" 2>/dev/null || true)"
+  if [[ "$_http_code" == "200" ]]; then
+    success "API responding at ${_check_url}"
+  else
+    warn "API health check returned HTTP ${_http_code:-no response} — the app may still be initializing."
+    warn "Test manually: curl -sk https://localhost:8443/api/config/ping/"
+  fi
+fi
+
+# ══════════════════════════════════════════════════════════════════════════════
 # Done
 # ══════════════════════════════════════════════════════════════════════════════
 printf "\n"
 hr
-printf "\n  ${BOLD}${GREEN}SecurityHub is ready!${NC}\n\n"
-printf "  ${BOLD}URL:${NC}          ${CYAN}${BASE_URL}${NC}\n"
-printf "  ${BOLD}Admin login:${NC}  ${ADMIN_EMAIL}\n"
-printf "  ${BOLD}Password:${NC}     ${YELLOW}${ADMIN_PASS}${NC}\n"
+printf "\n  ${BOLD}${GREEN}✔  SecurityHub is ready!${NC}\n\n"
+
+if [[ "$DEPLOY_MODE" == "docker" ]]; then
+  # Nginx maps :80→host:3000 (redirects to HTTPS) and :443→host:8443.
+  # Always show the port-qualified HTTPS URL since that's what the browser needs.
+  if [[ "$IS_WSL" == "true" ]]; then
+    printf "  ${BOLD}Open in your Windows browser:${NC}\n"
+    printf "    ${CYAN}https://localhost:8443${NC}\n"
+    printf "    ${DIM}(port 3000 redirects here — accept the self-signed cert warning)${NC}\n"
+  elif [[ "$DOMAIN" == "localhost" || "$DOMAIN" == "127.0.0.1" ]]; then
+    printf "  ${BOLD}URL:${NC}  ${CYAN}https://localhost:8443${NC}\n"
+    printf "        ${DIM}(port 3000 redirects to HTTPS — accept the self-signed cert warning)${NC}\n"
+  else
+    printf "  ${BOLD}URL:${NC}  ${CYAN}${BASE_URL}${NC}\n"
+    printf "        ${DIM}(make sure your DNS / reverse proxy points to this server's port 8443)${NC}\n"
+  fi
+else
+  printf "  ${BOLD}URL:${NC}  ${CYAN}${BASE_URL}${NC}\n"
+fi
+
+printf "\n"
+printf "  ${BOLD}Username:${NC}  ${ADMIN_USER}\n"
+printf "  ${BOLD}Password:${NC}  ${YELLOW}${ADMIN_PASS}${NC}\n"
 printf "\n"
 printf "  ${YELLOW}${BOLD}⚠  Change the admin password after your first login.${NC}\n"
 printf "\n"
