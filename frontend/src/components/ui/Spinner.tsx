@@ -1,32 +1,64 @@
-export function Spinner({ size = 'md', className = '' }: { size?: 'sm' | 'md' | 'lg'; className?: string }) {
-  const s = { sm: 'h-4 w-4', md: 'h-6 w-6', lg: 'h-8 w-8' }[size]
+import { ReactNode } from 'react'
+import { clsx } from 'clsx'
+
+// ── InlineSpinner ────────────────────────────────────────────────────────────
+
+export function InlineSpinner({ className }: { className?: string }) {
   return (
-    <svg className={`animate-spin text-indigo-500 ${s} ${className}`} fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-    </svg>
+    <span
+      className={clsx('block rounded-full border-2 border-accent-500/30 border-t-accent-500 animate-spin', className)}
+      style={{ width: 16, height: 16 }}
+      aria-hidden="true"
+    />
   )
 }
+
+// ── PageSpinner ───────────────────────────────────────────────────────────────
 
 export function PageSpinner() {
   return (
     <div className="flex h-64 items-center justify-center">
-      <Spinner size="lg" />
+      <span
+        className="block rounded-full border-2 border-accent-500/30 border-t-accent-500 animate-spin"
+        style={{ width: 32, height: 32 }}
+        role="status"
+        aria-label="Loading"
+      />
     </div>
   )
 }
 
-export function EmptyState({ icon: Icon, title, subtitle, action }: {
+// ── Legacy Spinner (kept for backward compatibility) ──────────────────────────
+
+export function Spinner({ size = 'md', className = '' }: { size?: 'sm' | 'md' | 'lg'; className?: string }) {
+  const dims = { sm: 16, md: 24, lg: 32 }[size]
+  return (
+    <span
+      className={clsx('block rounded-full border-2 border-accent-500/30 border-t-accent-500 animate-spin', className)}
+      style={{ width: dims, height: dims }}
+      aria-hidden="true"
+    />
+  )
+}
+
+// ── EmptyState ────────────────────────────────────────────────────────────────
+
+interface EmptyStateProps {
   icon?: React.ComponentType<{ className?: string }>
   title: string
+  description?: string
+  /** Legacy alias for description */
   subtitle?: string
-  action?: React.ReactNode
-}) {
+  action?: ReactNode
+}
+
+export function EmptyState({ icon: Icon, title, description, subtitle, action }: EmptyStateProps) {
+  const body = description ?? subtitle
   return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      {Icon && <Icon className="w-10 h-10 text-slate-600 mb-3" />}
-      <p className="text-sm font-medium text-slate-400">{title}</p>
-      {subtitle && <p className="text-xs text-slate-600 mt-1">{subtitle}</p>}
+    <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+      {Icon && <Icon className="w-10 h-10 text-text-muted mb-3" />}
+      <p className="text-sm font-medium text-text-secondary">{title}</p>
+      {body && <p className="text-xs text-text-muted mt-1">{body}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   )

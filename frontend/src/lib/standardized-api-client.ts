@@ -249,6 +249,84 @@ export const standardizedApiClient = {
     return response.data
   },
 
+  // ── Retests ──────────────────────────────────────────────────────────────
+  async getRetests(vulnId: string | number) {
+    const response = await apiClient.get(`/api/project/vulnerabilities/${vulnId}/retests/`)
+    return response.data
+  },
+  async createRetest(vulnId: string | number, data: Record<string, any>) {
+    const response = await apiClient.post(`/api/project/vulnerabilities/${vulnId}/retests/`, data)
+    return response.data
+  },
+  async deleteRetest(vulnId: string | number, retestId: string) {
+    const response = await apiClient.delete(`/api/project/vulnerabilities/${vulnId}/retests/${retestId}/`)
+    return response.data
+  },
+
+  // ── Comments ─────────────────────────────────────────────────────────────
+  async getComments(vulnId: string | number) {
+    const response = await apiClient.get(`/api/project/vulnerabilities/${vulnId}/comments/`)
+    return response.data
+  },
+  async createComment(vulnId: string | number, data: Record<string, any>) {
+    const response = await apiClient.post(`/api/project/vulnerabilities/${vulnId}/comments/`, data)
+    return response.data
+  },
+  async updateComment(vulnId: string | number, commentId: string, data: Record<string, any>) {
+    const response = await apiClient.patch(`/api/project/vulnerabilities/${vulnId}/comments/${commentId}/`, data)
+    return response.data
+  },
+  async deleteComment(vulnId: string | number, commentId: string) {
+    const response = await apiClient.delete(`/api/project/vulnerabilities/${vulnId}/comments/${commentId}/`)
+    return response.data
+  },
+
+  // ── CVE Enrichment ────────────────────────────────────────────────────────
+  async enrichVulnerability(vulnId: string | number) {
+    const response = await apiClient.post(`/api/project/vuln/${vulnId}/enrich/`)
+    return response.data
+  },
+
+  // ── SLA ──────────────────────────────────────────────────────────────────
+  async getSLAPolicy() {
+    const response = await apiClient.get('/api/project/sla/policy/')
+    return response.data
+  },
+  async updateSLAPolicy(data: Record<string, any>) {
+    const response = await apiClient.patch('/api/project/sla/policy/', data)
+    return response.data
+  },
+  async getSLABreached() {
+    const response = await apiClient.get('/api/project/sla/breached/')
+    return response.data
+  },
+
+  // ── Webhooks ─────────────────────────────────────────────────────────────
+  async getWebhookConfigs() {
+    const response = await apiClient.get('/api/webhooks/')
+    return response.data
+  },
+  async createWebhookConfig(data: Record<string, any>) {
+    const response = await apiClient.post('/api/webhooks/', data)
+    return response.data
+  },
+  async updateWebhookConfig(id: string, data: Record<string, any>) {
+    const response = await apiClient.patch(`/api/webhooks/${id}/`, data)
+    return response.data
+  },
+  async deleteWebhookConfig(id: string) {
+    const response = await apiClient.delete(`/api/webhooks/${id}/`)
+    return response.data
+  },
+  async testWebhook(id: string) {
+    const response = await apiClient.post(`/api/webhooks/${id}/test/`)
+    return response.data
+  },
+  async getWebhookDeliveries(id: string) {
+    const response = await apiClient.get(`/api/webhooks/${id}/deliveries/`)
+    return response.data
+  },
+
   // ── Config (read-only; populated via GitHub sync) ───────────────────────
   async getProjectTypes(params?: Record<string, any>) {
     const response = await apiClient.get('/api/config/project-types/', { params })

@@ -1,47 +1,79 @@
 import { clsx } from 'clsx'
+import React from 'react'
 
-type Variant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'purple'
+// ── Generic Badge ────────────────────────────────────────────────────────────
 
-const variants: Record<Variant, string> = {
-  default: 'bg-slate-700 text-slate-300',
-  success: 'bg-green-500/15 text-green-400 ring-1 ring-green-500/30',
-  warning: 'bg-yellow-500/15 text-yellow-400 ring-1 ring-yellow-500/30',
-  danger:  'bg-red-500/15 text-red-400 ring-1 ring-red-500/30',
-  info:    'bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/30',
-  purple:  'bg-indigo-500/15 text-indigo-400 ring-1 ring-indigo-500/30',
+interface BadgeProps {
+  children: React.ReactNode
+  className?: string
 }
 
-export function Badge({ children, variant = 'default', className }: {
-  children: React.ReactNode
-  variant?: Variant
-  className?: string
-}) {
+export function Badge({ children, className }: BadgeProps) {
   return (
-    <span className={clsx(
-      'inline-flex items-center rounded px-2 py-0.5 text-xs font-medium',
-      variants[variant],
-      className
-    )}>
+    <span
+      className={clsx(
+        'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-mono font-medium',
+        className
+      )}
+    >
       {children}
     </span>
   )
 }
 
-export function severityBadge(severity: string) {
+// ── Severity ─────────────────────────────────────────────────────────────────
+
+/**
+ * Returns a Tailwind class string for bg + text + border that matches the severity.
+ * Suitable for use on any element, not just Badge.
+ */
+export function severityColor(severity: string): string {
   const s = severity?.toLowerCase()
-  if (s === 'critical') return <Badge variant="danger">Critical</Badge>
-  if (s === 'high')     return <Badge variant="danger">High</Badge>
-  if (s === 'medium')   return <Badge variant="warning">Medium</Badge>
-  if (s === 'low')      return <Badge variant="info">Low</Badge>
-  return <Badge variant="default">{severity || 'Info'}</Badge>
+  if (s === 'critical') return 'bg-critical/15 text-critical border border-critical/30'
+  if (s === 'high')     return 'bg-high/15 text-high border border-high/30'
+  if (s === 'medium')   return 'bg-medium/15 text-medium border border-medium/30'
+  if (s === 'low')      return 'bg-low/15 text-low border border-low/30'
+  return                       'bg-info/15 text-info border border-info/30'
 }
 
-export function statusBadge(status: string) {
+export function SeverityBadge({ severity, className }: { severity: string; className?: string }) {
+  const label = severity
+    ? severity.charAt(0).toUpperCase() + severity.slice(1).toLowerCase()
+    : 'Info'
+  return (
+    <Badge className={clsx(severityColor(severity), className)}>
+      {label}
+    </Badge>
+  )
+}
+
+// ── Status ────────────────────────────────────────────────────────────────────
+
+function statusColor(status: string): string {
   const s = status?.toLowerCase()
-  if (s === 'completed')  return <Badge variant="success">Completed</Badge>
-  if (s === 'in progress' || s === 'ongoing') return <Badge variant="info">In Progress</Badge>
-  if (s === 'upcoming')   return <Badge variant="purple">Upcoming</Badge>
-  if (s === 'on hold')    return <Badge variant="warning">On Hold</Badge>
-  if (s === 'delay')      return <Badge variant="danger">Delayed</Badge>
-  return <Badge variant="default">{status}</Badge>
+  if (s === 'vulnerable')      return 'bg-critical/15 text-critical border border-critical/30'
+  if (s === 'confirm_fixed' || s === 'confirm fixed' || s === 'fixed')
+                                return 'bg-low/15 text-low border border-low/30'
+  if (s === 'accepted_risk' || s === 'accepted risk')
+                                return 'bg-medium/15 text-medium border border-medium/30'
+  if (s === 'false_positive' || s === 'false positive')
+                                return 'bg-text-muted/15 text-text-secondary border border-border-default'
+  return                               'bg-info/15 text-info border border-info/30'
+}
+
+function statusLabel(status: string): string {
+  const s = status?.toLowerCase()
+  if (s === 'vulnerable')                                  return 'Vulnerable'
+  if (s === 'confirm_fixed' || s === 'confirm fixed' || s === 'fixed') return 'Confirm Fixed'
+  if (s === 'accepted_risk' || s === 'accepted risk')      return 'Accepted Risk'
+  if (s === 'false_positive' || s === 'false positive')    return 'False Positive'
+  return status || 'Unknown'
+}
+
+export function StatusBadge({ status, className }: { status: string; className?: string }) {
+  return (
+    <Badge className={clsx(statusColor(status), className)}>
+      {statusLabel(status)}
+    </Badge>
+  )
 }

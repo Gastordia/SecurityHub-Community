@@ -1,15 +1,25 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { MagnifyingGlassIcon, BookOpenIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
+import { BookOpenIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import { standardizedApiClient } from '@/lib/standardized-api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/Button'
+import { SearchInput } from '@/components/ui/Input'
 import { PageSpinner, EmptyState } from '@/components/ui/Spinner'
-import { severityBadge } from '@/components/ui/Badge'
+import { SeverityBadge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import toast from 'react-hot-toast'
 
 const SEVERITIES = ['Critical', 'High', 'Medium', 'Low', 'Info']
+
+function DetailField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold text-text-muted uppercase tracking-wider mb-1">{label}</p>
+      {children}
+    </div>
+  )
+}
 
 export default function VulnDBPage() {
   const qc = useQueryClient()
@@ -44,45 +54,59 @@ export default function VulnDBPage() {
     mutationFn: () => standardizedApiClient.syncVulnDB(),
     onSuccess: (result: any) => {
       qc.invalidateQueries({ queryKey: ['vulndb'] })
-      toast.success(
-        `Sync complete — ${result?.created ?? 0} added, ${result?.updated ?? 0} updated`
-      )
+      toast.success(`Sync complete — ${result?.created ?? 0} added, ${result?.updated ?? 0} updated`)
     },
     onError: (e: any) => toast.error(e?.message || 'Sync failed'),
   })
 
+  const handleSearch = (val: string) => {
+    setSearch(val)
+    setPage(1)
+  }
+
   return (
-    <div className="p-6 space-y-5 max-w-5xl">
+    <div className="p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-white">Vulnerability Library</h1>
-          <p className="text-xs text-slate-500 mt-0.5">{total} entries — sourced from GitHub</p>
+          <h1 className="text-lg font-semibold text-text-primary">Vulnerability Library</h1>
+          <p className="text-xs text-text-muted mt-0.5">
+            Pre-populated templates for common findings.{total > 0 ? ` ${total} entries.` : ''}
+          </p>
         </div>
         {isAdmin && (
-          <Button size="sm" variant="secondary" onClick={() => sync.mutate()} loading={sync.isPending}>
-            <ArrowPathIcon className="w-4 h-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            icon={<ArrowPathIcon className="w-4 h-4" />}
+            onClick={() => sync.mutate()}
+            loading={sync.isPending}
+          >
             Sync from GitHub
           </Button>
         )}
       </div>
 
       <div className="flex gap-2">
-        <div className="relative flex-1">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1) }}
-            placeholder="Search library…"
-            className="w-full pl-9 pr-4 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        </div>
+        <SearchInput
+          value={search}
+          onChange={handleSearch}
+          placeholder="Search library…"
+          className="flex-1"
+        />
         <select
           value={severity}
-          onChange={e => { setSeverity(e.target.value); setPage(1) }}
-          className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          onChange={e => {
+            setSeverity(e.target.value)
+            setPage(1)
+          }}
+          className="px-3 py-2 rounded-lg bg-app-surface border border-border-default text-sm text-text-primary focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500/30"
         >
           <option value="">All Severities</option>
-          {SEVERITIES.map(s => <option key={s} value={s}>{s}</option>)}
+          {SEVERITIES.map(s => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -91,41 +115,71 @@ export default function VulnDBPage() {
       ) : entries.length === 0 ? (
         <EmptyState
           icon={BookOpenIcon}
-          title="Library is empty"
-          subtitle={
-            isAdmin
+          title={search || severity ? 'No vulnerabilities match your search.' : 'Library is empty'}
+          description={
+            search || severity
+              ? 'Try different keywords or remove the severity filter.'
+              : isAdmin
               ? 'Use "Sync from GitHub" to pull the latest vulnerability templates.'
               : 'The vulnerability library has not been populated yet. Ask an administrator to sync it.'
           }
           action={
-            isAdmin ? (
-              <Button size="sm" variant="secondary" onClick={() => sync.mutate()} loading={sync.isPending}>
-                <ArrowPathIcon className="w-4 h-4" />
+            isAdmin && !search && !severity ? (
+              <Button
+                variant="outline"
+                size="sm"
+                icon={<ArrowPathIcon className="w-4 h-4" />}
+                onClick={() => sync.mutate()}
+                loading={sync.isPending}
+              >
                 Sync from GitHub
               </Button>
             ) : undefined
           }
         />
       ) : (
-        <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+        <div className="bg-app-surface border border-border-subtle rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-800">
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase hidden sm:table-cell">Severity</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase hidden lg:table-cell">CVSS</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase hidden lg:table-cell">CWE</th>
+              <tr className="bg-app-raised border-b border-border-subtle">
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider">
+                  Name
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider hidden sm:table-cell">
+                  Severity
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider hidden lg:table-cell">
+                  CVSS
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-text-muted uppercase tracking-wider hidden lg:table-cell">
+                  CWE
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-border-subtle">
               {entries.map((v: any) => (
-                <tr key={v.id} onClick={() => setSelectedEntry(v.id)} className="hover:bg-slate-800/40 transition-colors cursor-pointer">
-                  <td className="px-4 py-3 text-white font-medium">{v.vulnerabilityname}</td>
-                  <td className="px-4 py-3 hidden sm:table-cell">{severityBadge(v.vulnerabilityseverity)}</td>
-                  <td className="px-4 py-3 text-slate-400 text-xs hidden lg:table-cell">
+                <tr
+                  key={v.id}
+                  onClick={() => setSelectedEntry(v.id)}
+                  className="hover:bg-app-overlay/50 transition-colors cursor-pointer"
+                >
+                  <td className="px-4 py-3">
+                    <p className="text-sm font-medium text-text-primary">{v.vulnerabilityname}</p>
+                    {v.vulnerabilitydescription && (
+                      <p className="text-xs text-text-muted mt-0.5 line-clamp-2 max-w-md">
+                        {v.vulnerabilitydescription}
+                      </p>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 hidden sm:table-cell">
+                    <SeverityBadge severity={v.vulnerabilityseverity} />
+                  </td>
+                  <td className="px-4 py-3 text-text-secondary text-xs hidden lg:table-cell">
                     {v.cvssscore != null ? v.cvssscore : '—'}
                   </td>
-                  <td className="px-4 py-3 text-slate-500 text-xs hidden lg:table-cell font-mono">{v.cwe || '—'}</td>
+                  <td className="px-4 py-3 text-text-muted text-xs hidden lg:table-cell font-mono">
+                    {v.cwe || '—'}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -134,24 +188,36 @@ export default function VulnDBPage() {
       )}
 
       {(data?.count ?? 0) > 20 && (
-        <div className="flex justify-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => setPage(p => p - 1)} disabled={page === 1}>
+        <div className="flex justify-center items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPage(p => p - 1)}
+            disabled={page === 1}
+          >
             Previous
           </Button>
-          <span className="flex items-center text-sm text-slate-400">Page {page}</span>
-          <Button variant="ghost" size="sm" onClick={() => setPage(p => p + 1)} disabled={entries.length < 20}>
+          <span className="text-sm text-text-muted">Page {page}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setPage(p => p + 1)}
+            disabled={entries.length < 20}
+          >
             Next
           </Button>
         </div>
       )}
 
       <Modal
-        open={selectedEntry !== null}
+        isOpen={selectedEntry !== null}
         onClose={() => setSelectedEntry(null)}
         title={entryData?.vulnerabilityname || 'Loading…'}
         size="lg"
         footer={
-          <Button variant="secondary" size="sm" onClick={() => setSelectedEntry(null)}>Close</Button>
+          <Button variant="ghost" size="sm" onClick={() => setSelectedEntry(null)}>
+            Close
+          </Button>
         }
       >
         {entryLoading ? (
@@ -159,54 +225,73 @@ export default function VulnDBPage() {
         ) : entryData ? (
           <div className="space-y-4">
             {entryData.vulnerabilityseverity && (
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium mb-1">Severity</p>
-                {severityBadge(entryData.vulnerabilityseverity)}
-              </div>
+              <DetailField label="Severity">
+                <SeverityBadge severity={entryData.vulnerabilityseverity} />
+              </DetailField>
             )}
             {entryData.cvssscore != null && (
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium mb-1">CVSS Score</p>
-                <p className="text-sm text-slate-300">{entryData.cvssscore}</p>
-              </div>
+              <DetailField label="CVSS Score">
+                <p className="text-sm text-text-primary">{entryData.cvssscore}</p>
+              </DetailField>
             )}
             {entryData.cvssvector && (
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium mb-1">CVSS Vector</p>
-                <p className="text-sm text-slate-300 font-mono">{entryData.cvssvector}</p>
-              </div>
+              <DetailField label="CVSS Vector">
+                <p className="text-sm text-text-secondary font-mono">{entryData.cvssvector}</p>
+              </DetailField>
             )}
             {entryData.cve && (
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium mb-1">CVE</p>
-                <p className="text-sm text-slate-300">{entryData.cve}</p>
-              </div>
+              <DetailField label="CVE">
+                <p className="text-sm text-text-primary">
+                  {Array.isArray(entryData.cve) ? entryData.cve.join(', ') : entryData.cve}
+                </p>
+              </DetailField>
             )}
             {entryData.cwe && (
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium mb-1">CWE</p>
-                <p className="text-sm text-slate-300">
+              <DetailField label="CWE">
+                <p className="text-sm text-text-secondary">
                   {Array.isArray(entryData.cwe) ? entryData.cwe.join(', ') : entryData.cwe}
                 </p>
-              </div>
+              </DetailField>
             )}
             {entryData.vulnerabilitydescription && (
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium mb-1">Description</p>
-                <pre className="whitespace-pre-wrap text-sm text-slate-300">{entryData.vulnerabilitydescription}</pre>
-              </div>
+              <DetailField label="Description">
+                <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
+                  {entryData.vulnerabilitydescription}
+                </p>
+              </DetailField>
             )}
             {entryData.vulnerabilitysolution && (
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium mb-1">Solution</p>
-                <pre className="whitespace-pre-wrap text-sm text-slate-300">{entryData.vulnerabilitysolution}</pre>
-              </div>
+              <DetailField label="Solution">
+                <p className="text-sm text-text-secondary whitespace-pre-wrap leading-relaxed">
+                  {entryData.vulnerabilitysolution}
+                </p>
+              </DetailField>
             )}
             {entryData.vulnerabilityreferlnk && (
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium mb-1">References</p>
-                <pre className="whitespace-pre-wrap text-sm text-slate-300">{entryData.vulnerabilityreferlnk}</pre>
-              </div>
+              <DetailField label="References">
+                <div className="space-y-0.5">
+                  {String(entryData.vulnerabilityreferlnk)
+                    .split(/\n+/)
+                    .filter(Boolean)
+                    .map((line: string, i: number) =>
+                      /^https?:\/\//.test(line.trim()) ? (
+                        <a
+                          key={i}
+                          href={line.trim()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block text-xs text-accent-400 hover:text-text-primary underline underline-offset-2 truncate transition-colors"
+                        >
+                          {line.trim()}
+                        </a>
+                      ) : (
+                        <p key={i} className="text-xs text-text-secondary">
+                          {line.trim()}
+                        </p>
+                      )
+                    )}
+                </div>
+              </DetailField>
             )}
           </div>
         ) : null}

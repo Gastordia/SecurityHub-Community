@@ -1,47 +1,63 @@
 import { clsx } from 'clsx'
-import { ButtonHTMLAttributes, forwardRef } from 'react'
+import { ButtonHTMLAttributes, forwardRef, ReactNode } from 'react'
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
-type Size = 'sm' | 'md' | 'lg'
+export type ButtonVariant = 'primary' | 'ghost' | 'danger' | 'outline'
+export type ButtonSize = 'sm' | 'md' | 'lg'
 
-const base = 'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed'
+const base =
+  'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all ' +
+  'disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none ' +
+  'focus-visible:ring-2 focus-visible:ring-accent-500/50'
 
-const variants: Record<Variant, string> = {
-  primary:   'bg-indigo-600 hover:bg-indigo-500 text-white',
-  secondary: 'bg-slate-700 hover:bg-slate-600 text-slate-200 ring-1 ring-slate-600',
-  ghost:     'hover:bg-slate-800 text-slate-400 hover:text-slate-200',
-  danger:    'bg-red-600 hover:bg-red-500 text-white',
+const variants: Record<ButtonVariant, string> = {
+  primary: 'bg-accent-500 hover:bg-accent-600 text-white',
+  ghost:   'text-text-secondary hover:text-text-primary hover:bg-app-overlay',
+  danger:  'bg-red-600/15 text-red-400 hover:bg-red-600/25',
+  outline: 'border border-border-default text-text-secondary hover:border-border-strong hover:text-text-primary',
 }
 
-const sizes: Record<Size, string> = {
+const sizes: Record<ButtonSize, string> = {
   sm: 'px-3 py-1.5 text-xs',
   md: 'px-4 py-2 text-sm',
   lg: 'px-5 py-2.5 text-sm',
 }
 
-interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant
-  size?: Size
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant
+  size?: ButtonSize
   loading?: boolean
+  icon?: ReactNode
 }
 
-export const Button = forwardRef<HTMLButtonElement, Props>(({
-  variant = 'primary', size = 'md', loading, className, children, disabled, ...props
-}, ref) => (
-  <button
-    ref={ref}
-    disabled={disabled || loading}
-    className={clsx(base, variants[variant], sizes[size], className)}
-    {...props}
-  >
-    {loading && (
-      <svg className="animate-spin h-3.5 w-3.5" fill="none" viewBox="0 0 24 24">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-      </svg>
-    )}
-    {children}
-  </button>
-))
+function CssSpinner() {
+  return (
+    <span
+      className="block rounded-full animate-spin"
+      style={{
+        width: 14,
+        height: 14,
+        border: '2px solid transparent',
+        borderTopColor: 'currentColor',
+        borderRightColor: 'currentColor',
+        opacity: 0.9,
+      }}
+      aria-hidden="true"
+    />
+  )
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant = 'primary', size = 'md', loading, icon, className, children, disabled, ...props }, ref) => (
+    <button
+      ref={ref}
+      disabled={disabled || loading}
+      className={clsx(base, variants[variant], sizes[size], className)}
+      {...props}
+    >
+      {loading ? <CssSpinner /> : icon ? <span className="shrink-0 flex items-center">{icon}</span> : null}
+      {children}
+    </button>
+  )
+)
 
 Button.displayName = 'Button'
