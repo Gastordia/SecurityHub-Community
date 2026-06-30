@@ -35,52 +35,52 @@ class BurpParser(BaseParser):
 
     def validate_file(self, file_path: str) -> bool:
         """Validate if file is a Burp XML report"""
-        logger.debug(f"🔍 BurpParser: Starting validation for {file_path}")
+        logger.debug("BurpParser: Starting validation for %s", file_path)
         
         if not str(file_path).lower().endswith('.xml'):
-            logger.debug(f"❌ BurpParser: Invalid file extension for {file_path}")
+            logger.debug("BurpParser: Invalid file extension for %s", file_path)
             return False
-        
+
         try:
-            logger.debug(f"🔍 BurpParser: Parsing XML file...")
+            logger.debug("BurpParser: Parsing XML file...")
             tree = parse(file_path)
             root = tree.getroot()
-            logger.debug(f"🔍 BurpParser: Root tag: {root.tag}")
-            
+            logger.debug("BurpParser: Root tag: %s", root.tag)
+
             # Check if it has the expected Burp XML structure
             is_valid = root.tag == "issues" or any(child.tag == "issue" for child in root)
-            logger.info(f"🔍 BurpParser: Validation result: {is_valid}")
+            logger.info("BurpParser: Validation result: %s", is_valid)
             return is_valid
         except Exception as e:
-            logger.error(f"💥 BurpParser: Validation error: {str(e)}")
+            logger.error("BurpParser: Validation error: %s", e)
             return False
 
     def parse_findings(self, file_path: str) -> List[StandardizedFinding]:
         """Parse Burp XML file and return standardized findings"""
-        logger.info(f"🔍 BurpParser: Starting to parse findings from {file_path}")
+        logger.info("BurpParser: Starting to parse findings from %s", file_path)
         try:
             tree = parse(file_path)
             findings = self._get_items(tree)
-            logger.info(f"✅ BurpParser: Successfully parsed {len(findings)} findings")
+            logger.info("BurpParser: Successfully parsed %s findings", len(findings))
             return findings
         except Exception as e:
-            logger.error(f"💥 BurpParser: Failed to parse file: {str(e)}")
+            logger.error("BurpParser: Failed to parse file: %s", e)
             return []
 
     def _get_items(self, tree) -> List[StandardizedFinding]:
         """Internal method to get items from XML tree"""
-        logger.debug(f"🔍 BurpParser: Processing XML tree...")
+        logger.debug("BurpParser: Processing XML tree...")
         items = {}
         issue_count = 0
-        
+
         for node in tree.findall("issue"):
             issue_count += 1
-            logger.debug(f"🔍 BurpParser: Processing issue {issue_count}")
+            logger.debug("BurpParser: Processing issue %s", issue_count)
             item = self._get_item(node)
             if item:
                 dupe_key = item.scanner_id
                 if dupe_key in items:
-                    logger.debug(f"🔍 BurpParser: Merging duplicate finding: {dupe_key}")
+                    logger.debug("BurpParser: Merging duplicate finding: %s", dupe_key)
                     # Add new endpoints and request/response pairs to raw_data
                     if "affected_endpoints" in item.raw_data:
                         if "affected_endpoints" not in items[dupe_key].raw_data:
@@ -94,10 +94,10 @@ class BurpParser(BaseParser):
                     
                     items[dupe_key].description += "\n\n" + item.description
                 else:
-                    logger.debug(f"🔍 BurpParser: Adding new finding: {dupe_key}")
+                    logger.debug("BurpParser: Adding new finding: %s", dupe_key)
                     items[dupe_key] = item
 
-        logger.info(f"🔍 BurpParser: Processed {issue_count} issues, created {len(items)} unique findings")
+        logger.info("BurpParser: Processed %s issues, created %s unique findings", issue_count, len(items))
         return list(items.values())
 
     def _get_item(self, node) -> Optional[StandardizedFinding]:
@@ -304,7 +304,7 @@ class BurpParser(BaseParser):
             return finding
             
         except Exception as e:
-            logger.error(f"💥 BurpParser: Error parsing item: {str(e)}")
+            logger.error("BurpParser: Error parsing item: %s", e)
             return None
 
     def _convert_severity(self, severity: str) -> SeverityLevel:
@@ -340,10 +340,10 @@ class BurpParser(BaseParser):
                     "<Binary Redacted Data>",
                 ])
             except Exception as e:
-                logger.warning(f"⚠️ BurpParser: Failed to decode base64: {str(e)}")
+                logger.warning("BurpParser: Failed to decode base64: %s", e)
                 return value
         except Exception as e:
-            logger.warning(f"⚠️ BurpParser: Failed to decode base64: {str(e)}")
+            logger.warning("BurpParser: Failed to decode base64: %s", e)
             return value
 
     def _do_clean(self, value) -> str:

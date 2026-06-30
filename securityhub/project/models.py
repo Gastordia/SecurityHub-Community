@@ -86,7 +86,6 @@ class Project(models.Model):
             return 'Delay'
 
     def save(self, *args, **kwargs):
-        # ✅ FIXED: Issue #12 - Wrap save() in transaction for atomicity
         from django.db import transaction
 
         with transaction.atomic():
@@ -141,10 +140,10 @@ class Vulnerability(models.Model):
     cwe = models.JSONField(null=True, blank=True)
     published = models.BooleanField(default=False)
     
-    # ✅ CVE Information
+    # CVE Information
     cve = models.JSONField(null=True, blank=True, help_text="CVE IDs associated with this vulnerability")
     
-    # ✅ Intelligence Engine Fields - Threat Intelligence
+    # Threat Intelligence
     has_exploit = models.BooleanField(default=False, help_text="Vulnerability has known exploits")
     exploit_code_maturity = models.CharField(max_length=50, blank=True, null=True, help_text="Exploit code maturity level")
     exploitation_availability = models.CharField(max_length=50, blank=True, null=True, help_text="Exploitation availability")
@@ -153,7 +152,7 @@ class Vulnerability(models.Model):
     exploitation_method = models.CharField(max_length=100, blank=True, null=True, help_text="Exploitation method")
     exploitation_score = models.FloatField(blank=True, null=True, help_text="Exploitation score")
 
-    # ✅ Intelligence Engine Fields - Asset Intelligence
+    # Asset Intelligence
     asset_criticality = models.CharField(max_length=50, blank=True, null=True, help_text="Asset criticality level")
     asset_value = models.CharField(max_length=50, blank=True, null=True, help_text="Asset business value")
     asset_tags = models.JSONField(blank=True, null=True, help_text="Asset tags and metadata")
@@ -162,7 +161,7 @@ class Vulnerability(models.Model):
     scope = models.CharField(max_length=50, blank=True, null=True, help_text="Scope classification")
     out_of_scope = models.BooleanField(default=False, help_text="Vulnerability is out of scope")
     
-    # ✅ Intelligence Engine Fields - Cloud & Container Context
+    # Cloud & Container Context
     cloud_platform = models.CharField(max_length=50, blank=True, null=True, help_text="Cloud platform (AWS, Azure, GCP)")
     kubernetes_cluster = models.CharField(max_length=200, blank=True, null=True, help_text="Kubernetes cluster name")
     kubernetes_namespace = models.CharField(max_length=200, blank=True, null=True, help_text="Kubernetes namespace")
@@ -170,7 +169,7 @@ class Vulnerability(models.Model):
     container_image = models.CharField(max_length=500, blank=True, null=True, help_text="Container image")
     container_image_digest = models.CharField(max_length=200, blank=True, null=True, help_text="Container image digest")
     
-    # ✅ Intelligence Engine Fields - Temporal Intelligence
+    # Temporal Intelligence
     first_detected = models.DateTimeField(blank=True, null=True, help_text="First detection timestamp")
     last_detected = models.DateTimeField(blank=True, null=True, help_text="Last detection timestamp")
     fix_available = models.BooleanField(default=False, help_text="Fix is available")
@@ -179,7 +178,7 @@ class Vulnerability(models.Model):
     fixed_in_version = models.CharField(max_length=100, blank=True, null=True, help_text="Fixed in version")
     patched_versions = models.JSONField(blank=True, null=True, help_text="Patched versions")
     
-    # ✅ Intelligence Engine Fields - Technical Intelligence
+    # Technical Intelligence
     source_file = models.CharField(max_length=500, blank=True, null=True, help_text="Source file path")
     source_line = models.IntegerField(blank=True, null=True, help_text="Source line number")
     sink_file = models.CharField(max_length=500, blank=True, null=True, help_text="Sink file path")
@@ -188,17 +187,17 @@ class Vulnerability(models.Model):
     proof_of_concept = models.TextField(blank=True, null=True, help_text="Proof of concept")
     steps_to_reproduce = models.TextField(blank=True, null=True, help_text="Steps to reproduce")
     
-    # ✅ Intelligence Engine Fields - Multi-Source Scoring
+    # Multi-Source Scoring
     vendor_score = models.FloatField(blank=True, null=True, help_text="Vendor-specific score")
     custom_risk_score = models.FloatField(blank=True, null=True, help_text="Custom risk score")
     
-    # ✅ Intelligence Engine Fields - Compliance & Regulatory
+    # Compliance & Regulatory
     compliance_frameworks = models.JSONField(blank=True, null=True, help_text="Compliance frameworks")
     nist_800_53_controls = models.JSONField(blank=True, null=True, help_text="NIST 800-53 controls")
     masvs_controls = models.JSONField(blank=True, null=True, help_text="MASVS controls")
     disa_stig = models.JSONField(blank=True, null=True, help_text="DISA STIG controls")
     
-    # ✅ Intelligence Engine Fields - Operational Intelligence
+    # Operational Intelligence
     scanner_confidence = models.FloatField(blank=True, null=True, help_text="Scanner confidence level")
     scanner_tags = models.JSONField(blank=True, null=True, help_text="Scanner tags")
     detection_method = models.CharField(max_length=100, blank=True, null=True, help_text="Detection method")
@@ -208,7 +207,7 @@ class Vulnerability(models.Model):
     verified = models.BooleanField(default=False, help_text="Vulnerability is verified")
     validated_at = models.DateTimeField(blank=True, null=True, help_text="Validation timestamp")
     
-    # ✅ Intelligence Engine Fields - Dependency Intelligence
+    # Dependency Intelligence
     package_name = models.CharField(max_length=200, blank=True, null=True, help_text="Package name")
     package_version = models.CharField(max_length=100, blank=True, null=True, help_text="Package version")
     package_type = models.CharField(max_length=50, blank=True, null=True, help_text="Package type")
@@ -216,7 +215,7 @@ class Vulnerability(models.Model):
     vulnerable_versions = models.JSONField(blank=True, null=True, help_text="Vulnerable versions")
     installed_version = models.CharField(max_length=100, blank=True, null=True, help_text="Installed version")
     
-    # ✅ Intelligence Engine Fields - Network & Service Context
+    # Network & Service Context
     ip_addresses = models.JSONField(blank=True, null=True, help_text="Affected IP addresses")
     hostnames = models.JSONField(blank=True, null=True, help_text="Affected hostnames")
     ports = models.JSONField(blank=True, null=True, help_text="Affected ports")
@@ -224,7 +223,7 @@ class Vulnerability(models.Model):
     protocols = models.JSONField(blank=True, null=True, help_text="Affected protocols")
     endpoints = models.JSONField(blank=True, null=True, help_text="Affected endpoints")
     
-    # ✅ Intelligence Engine Fields - Advanced Correlation
+    # Advanced Correlation
     related_vulnerabilities = models.JSONField(blank=True, null=True, help_text="Related vulnerabilities")
     attack_vectors = models.JSONField(blank=True, null=True, help_text="Attack vectors")
     mitre_tactics = models.JSONField(blank=True, null=True, help_text="MITRE ATT&CK tactics")
@@ -237,7 +236,54 @@ class Vulnerability(models.Model):
     impact_assessment = models.JSONField(blank=True, null=True, help_text="Impact assessment")
     risk_acceptance = models.BooleanField(default=False, help_text="Risk accepted")
     risk_acceptance_reason = models.TextField(blank=True, null=True, help_text="Risk acceptance reason")
-    
+
+    # CVE enrichment
+    cve_enrichment_status = models.CharField(
+        max_length=20,
+        choices=[('pending', 'Pending'), ('enriched', 'Enriched'), ('not_found', 'Not Found'), ('skipped', 'Skipped')],
+        default='pending',
+    )
+    epss_score = models.FloatField(null=True, blank=True, help_text="EPSS probability (0-1)")
+    epss_percentile = models.FloatField(null=True, blank=True, help_text="EPSS percentile (0-100)")
+    nvd_description = models.TextField(null=True, blank=True, help_text="NVD vulnerability description")
+    enriched_at = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def sla_deadline(self):
+        """Compute deadline based on severity and the current SLA policy."""
+        from datetime import timedelta
+        try:
+            policy = SLAPolicy.objects.order_by('-created_at').first()
+            if not policy or not self.created:
+                return None
+            days_map = {
+                'Critical': policy.critical_days,
+                'High': policy.high_days,
+                'Medium': policy.medium_days,
+                'Low': policy.low_days,
+                'Informational': policy.informational_days,
+            }
+            days = days_map.get(self.vulnerabilityseverity)
+            if days is None:
+                return None
+            return self.created + timedelta(days=days)
+        except Exception:
+            return None
+
+    @property
+    def sla_status(self):
+        """Return 'on_track', 'due_soon' (<=3 days), or 'breached'."""
+        from django.utils import timezone
+        deadline = self.sla_deadline
+        if deadline is None or self.status == 'Confirm Fixed':
+            return None
+        now = timezone.now()
+        delta = deadline - now
+        if delta.total_seconds() < 0:
+            return 'breached'
+        elif delta.days <= 3:
+            return 'due_soon'
+        return 'on_track'
 
     class Meta:
         unique_together = (("project", "vulnerabilityname"),)
@@ -339,6 +385,63 @@ class VulnerableInstance(models.Model):
             super(VulnerableInstance, self).save(*args, **kwargs)
 
 
+RETEST_RESULT_CHOICES = [
+    ('fixed', 'Fixed'),
+    ('still_vulnerable', 'Still Vulnerable'),
+    ('partial_fix', 'Partial Fix'),
+]
+
+
+class Retest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    vulnerability = models.ForeignKey(Vulnerability, on_delete=models.CASCADE, related_name='retests')
+    tester = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True)
+    date = models.DateField()
+    result = models.CharField(max_length=20, choices=RETEST_RESULT_CHOICES)
+    notes = models.TextField(blank=True)
+    evidence = models.TextField(blank=True, help_text='Screenshot URL or text evidence')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-date', '-created_at']
+
+
+class SLAPolicy(models.Model):
+    """Organization-wide SLA: how many days each severity has before breach."""
+    critical_days = models.IntegerField(default=7)
+    high_days = models.IntegerField(default=30)
+    medium_days = models.IntegerField(default=90)
+    low_days = models.IntegerField(default=180)
+    informational_days = models.IntegerField(default=365)
+    created_by = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'SLA Policy'
+
+
+class FindingComment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    vulnerability = models.ForeignKey(Vulnerability, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey('accounts.CustomUser', on_delete=models.SET_NULL, null=True)
+    body = models.TextField()
+    is_internal = models.BooleanField(
+        default=False,
+        help_text="Internal comments are excluded from client-facing report exports",
+    )
+    is_deleted = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Comment by {self.author_id} on {self.vulnerability_id}"
+
+
 __all__ = [
     'Project', 'Vulnerability', 'VulnerableInstance', 'ProjectScope',
+    'Retest', 'SLAPolicy', 'FindingComment',
 ]

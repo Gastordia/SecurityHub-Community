@@ -38,38 +38,38 @@ class NexposeParser(BaseParser):
 
     def validate_file(self, file_path: str) -> bool:
         """Validate if file is a valid Nexpose XML report"""
-        logger.debug(f"🔍 NexposeParser: Validating file: {file_path}")
+        logger.debug("NexposeParser: Validating file: %s", file_path)
         
         if not str(file_path).lower().endswith('.xml'):
-            logger.debug(f"🔍 NexposeParser: Invalid file extension")
+            logger.debug("NexposeParser: Invalid file extension")
             return False
-        
+
         try:
             tree = parse(file_path)
             root = tree.getroot()
-            logger.debug(f"🔍 NexposeParser: Root tag: {root.tag}")
-            
+            logger.debug("NexposeParser: Root tag: %s", root.tag)
+
             # Check for Nexpose XML structure
-            is_valid = (root.tag == "NexposeReport" or 
+            is_valid = (root.tag == "NexposeReport" or
                        any(child.tag in ["VulnerabilityDefinitions", "nodes"] for child in root))
-            logger.debug(f"🔍 NexposeParser: Validation result: {is_valid}")
+            logger.debug("NexposeParser: Validation result: %s", is_valid)
             return is_valid
         except Exception as e:
-            logger.error(f"💥 NexposeParser: Validation error: {str(e)}")
+            logger.error("NexposeParser: Validation error: %s", e)
             return False
 
     def parse_findings(self, file_path: str) -> List[StandardizedFinding]:
         """Parse Nexpose XML file and return standardized findings"""
-        logger.info(f"🔍 NexposeParser: Starting to parse findings from {file_path}")
-        
+        logger.info("NexposeParser: Starting to parse findings from %s", file_path)
+
         try:
             tree = parse(file_path)
             vuln_definitions = self._get_vuln_definitions(tree)
             findings = self._get_standardized_items(tree, vuln_definitions)
-            logger.info(f"✅ NexposeParser: Successfully parsed {len(findings)} findings")
+            logger.info("NexposeParser: Successfully parsed %s findings", len(findings))
             return findings
         except Exception as e:
-            logger.error(f"💥 NexposeParser: Failed to parse Nexpose file: {str(e)}")
+            logger.error("NexposeParser: Failed to parse Nexpose file: %s", e)
             return []
 
     def _get_vuln_definitions(self, tree) -> Dict[str, Dict]:
@@ -139,7 +139,7 @@ class NexposeParser(BaseParser):
 
                 vulns[vid] = vuln
         
-        logger.debug(f"🔍 NexposeParser: Found {len(vulns)} vulnerability definitions")
+        logger.debug("NexposeParser: Found %s vulnerability definitions", len(vulns))
         return vulns
 
     def _parse_html_type(self, node):

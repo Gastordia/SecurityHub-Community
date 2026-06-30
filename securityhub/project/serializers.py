@@ -6,7 +6,7 @@ Comprehensive serializers for project, vulnerability, and scope management
 from rest_framework import serializers
 from drf_spectacular.utils import extend_schema_field, extend_schema_serializer
 from drf_spectacular.types import OpenApiTypes
-from .models import Project, ProjectScope, Vulnerability, VulnerableInstance
+from .models import Project, ProjectScope, Vulnerability, VulnerableInstance, Retest, SLAPolicy, FindingComment
 from accounts.models import CustomUser
 
 
@@ -317,6 +317,55 @@ class UpdateProjectOwnerSerializer(serializers.Serializer):
         child=serializers.IntegerField(),
         help_text="List of user IDs to assign as project owners"
     )
+
+
+@extend_schema_serializer()
+class RetestSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Retest model.
+    """
+    tester_name = serializers.SerializerMethodField()
+
+    def get_tester_name(self, obj):
+        return obj.tester.email if obj.tester else None
+
+    class Meta:
+        model = Retest
+        fields = [
+            'id', 'vulnerability', 'tester', 'tester_name',
+            'date', 'result', 'notes', 'evidence', 'created_at',
+        ]
+        read_only_fields = ['id', 'created_at', 'tester']
+
+
+@extend_schema_serializer()
+class SLAPolicySerializer(serializers.ModelSerializer):
+    """
+    Serializer for SLAPolicy model.
+    """
+
+    class Meta:
+        model = SLAPolicy
+        fields = [
+            'id', 'critical_days', 'high_days', 'medium_days',
+            'low_days', 'informational_days', 'created_by',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
+
+
+@extend_schema_serializer()
+class FindingCommentSerializer(serializers.ModelSerializer):
+    author_email = serializers.SerializerMethodField()
+
+    def get_author_email(self, obj):
+        return obj.author.email if obj.author else None
+
+    class Meta:
+        model = FindingComment
+        fields = ['id', 'vulnerability', 'author', 'author_email', 'body',
+                  'is_internal', 'is_deleted', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'author', 'is_deleted', 'created_at', 'updated_at']
 
 
 @extend_schema_serializer()

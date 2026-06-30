@@ -36,31 +36,31 @@ class NmapParser(BaseParser):
 
     def validate_file(self, file_path: str) -> bool:
         """Validate if file is a valid Nmap XML report"""
-        logger.debug(f"🔍 NmapParser: Starting validation for {file_path}")
+        logger.debug("NmapParser: Starting validation for %s", file_path)
         
         if not self.validate_file_extension(file_path, ['.xml']):
-            logger.debug(f"❌ NmapParser: Invalid file extension for {file_path}")
+            logger.debug("NmapParser: Invalid file extension for %s", file_path)
             return False
-        
+
         try:
-            logger.debug(f"🔍 NmapParser: Parsing XML file...")
+            logger.debug("NmapParser: Parsing XML file...")
             tree = parse(file_path)
             root = tree.getroot()
-            logger.debug(f"🔍 NmapParser: Root tag: {root.tag}")
-            
+            logger.debug("NmapParser: Root tag: %s", root.tag)
+
             # Check for Nmap XML structure - must have nmaprun root tag
             # Be more specific to avoid conflicts with other XML formats
             is_valid = root.tag == "nmaprun"
-            
+
             # Additional check: if it's nmaprun, it should have scanner attribute
             if is_valid and root.get('scanner') != 'nmap':
-                logger.debug(f"🔍 NmapParser: Root is nmaprun but scanner attribute is not 'nmap': {root.get('scanner')}")
+                logger.debug("NmapParser: Root is nmaprun but scanner attribute is not 'nmap': %s", root.get('scanner'))
                 is_valid = False
-            
-            logger.info(f"🔍 NmapParser: Validation result: {is_valid} (root tag: {root.tag})")
+
+            logger.info("NmapParser: Validation result: %s (root tag: %s)", is_valid, root.tag)
             return is_valid
         except Exception as e:
-            logger.error(f"💥 NmapParser: Validation error: {str(e)}")
+            logger.error("NmapParser: Validation error: %s", e)
             return False
 
     def parse_findings(self, file_path: str) -> List[StandardizedFinding]:
@@ -69,7 +69,7 @@ class NmapParser(BaseParser):
             with open(file_path, 'rb') as f:
                 return self._parse_nmap_findings(f)
         except Exception as e:
-            logger.error(f"Failed to parse Nmap file: {str(e)}")
+            logger.error("Failed to parse Nmap file: %s", e)
             return []
 
     def _parse_nmap_findings(self, file) -> List[StandardizedFinding]:
@@ -159,13 +159,13 @@ class NmapParser(BaseParser):
             
             # Skip hosts that are down (only process "up" hosts)
             if host_status == "down":
-                logger.debug(f"⏭️ Skipping down host: {ip}")
+                logger.debug("Skipping down host: %s", ip)
                 continue
 
             # Create host finding even if no open ports
             host_addr = fqdn or ip
             if not host_addr:
-                logger.warning(f"⚠️ Skipping host without IP or hostname")
+                logger.warning("Skipping host without IP or hostname")
                 continue
                 
             dupe_key = f"nmap:{host_addr}"

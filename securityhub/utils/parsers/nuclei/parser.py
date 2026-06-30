@@ -86,7 +86,7 @@ class NucleiParser(BaseParser):
             return self._process_findings(data)
             
         except Exception as e:
-            logger.error(f"Failed to parse Nuclei file: {str(e)}")
+            logger.error("Failed to parse Nuclei file: %s", e)
             return []
 
     def _process_findings(self, data: List[Dict]) -> List[StandardizedFinding]:
@@ -224,7 +224,7 @@ class NucleiParser(BaseParser):
             return finding
             
         except Exception as e:
-            logger.error(f"Error creating Nuclei finding: {str(e)}")
+            logger.error("Error creating Nuclei finding: %s", e)
             return None
 
     def _convert_severity(self, severity: str) -> SeverityLevel:

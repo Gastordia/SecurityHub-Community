@@ -67,7 +67,7 @@ class TrivyParser(BaseParser):
             with open(file_path, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except Exception as e:
-            logger.error(f"TrivyParser: failed to load file: {e}")
+            logger.error("TrivyParser: failed to load file: %s", e)
             return []
 
         if self._is_trivy(data):
@@ -112,7 +112,7 @@ class TrivyParser(BaseParser):
                         dupes[key] = finding
                         findings.append(finding)
 
-        logger.info(f"TrivyParser: parsed {len(findings)} Trivy findings")
+        logger.info("TrivyParser: parsed %s Trivy findings", len(findings))
         return findings
 
     def _trivy_vuln_to_finding(
@@ -200,7 +200,7 @@ class TrivyParser(BaseParser):
             return finding
 
         except Exception as e:
-            logger.error(f"TrivyParser: error parsing trivy vuln: {e}")
+            logger.error("TrivyParser: error parsing trivy vuln: %s", e)
             return None
 
     # ── Grype ─────────────────────────────────────────────────────────────────
@@ -221,7 +221,7 @@ class TrivyParser(BaseParser):
                     dupes[key] = finding
                     findings.append(finding)
 
-        logger.info(f"TrivyParser (Grype): parsed {len(findings)} findings")
+        logger.info("TrivyParser (Grype): parsed %s findings", len(findings))
         return findings
 
     def _grype_match_to_finding(self, match: Dict, image_name: str) -> Optional[StandardizedFinding]:
@@ -297,7 +297,7 @@ class TrivyParser(BaseParser):
             )
 
         except Exception as e:
-            logger.error(f"TrivyParser (Grype): error parsing match: {e}")
+            logger.error("TrivyParser (Grype): error parsing match: %s", e)
             return None
 
     # ── Snyk ──────────────────────────────────────────────────────────────────
@@ -316,7 +316,7 @@ class TrivyParser(BaseParser):
                     dupes[key] = finding
                     findings.append(finding)
 
-        logger.info(f"TrivyParser (Snyk): parsed {len(findings)} findings")
+        logger.info("TrivyParser (Snyk): parsed %s findings", len(findings))
         return findings
 
     def _snyk_vuln_to_finding(self, vuln: Dict, project_name: str) -> Optional[StandardizedFinding]:
@@ -379,5 +379,5 @@ class TrivyParser(BaseParser):
             )
 
         except Exception as e:
-            logger.error(f"TrivyParser (Snyk): error parsing vuln: {e}")
+            logger.error("TrivyParser (Snyk): error parsing vuln: %s", e)
             return None

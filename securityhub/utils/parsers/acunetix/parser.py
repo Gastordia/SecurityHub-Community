@@ -37,58 +37,58 @@ class AcunetixParser(BaseParser):
 
     def validate_file(self, file_path: str) -> bool:
         """Validate if file is a valid Acunetix report"""
-        logger.debug(f"🔍 AcunetixParser: Starting validation for {file_path}")
+        logger.debug("AcunetixParser: Starting validation for %s", file_path)
         
         file_path_str = str(file_path).lower()
         
         if file_path_str.endswith('.xml'):
             try:
-                logger.debug(f"🔍 AcunetixParser: Validating XML file...")
+                logger.debug("AcunetixParser: Validating XML file...")
                 root = parse(file_path).getroot()
-                logger.debug(f"🔍 AcunetixParser: Root tag: {root.tag}")
-                
+                logger.debug("AcunetixParser: Root tag: %s", root.tag)
+
                 # Check for Acunetix XML structure - look for Scan elements
                 is_valid = root.tag == "Scan" or any(child.tag == "Scan" for child in root)
-                logger.info(f"🔍 AcunetixParser: XML validation result: {is_valid}")
+                logger.info("AcunetixParser: XML validation result: %s", is_valid)
                 return is_valid
             except Exception as e:
-                logger.error(f"💥 AcunetixParser: XML validation error: {str(e)}")
+                logger.error("AcunetixParser: XML validation error: %s", e)
                 return False
         elif file_path_str.endswith('.json'):
             try:
-                logger.debug(f"🔍 AcunetixParser: Validating JSON file...")
+                logger.debug("AcunetixParser: Validating JSON file...")
                 with open(file_path, 'r') as f:
                     data = json.load(f)
-                
+
                 # Check for Acunetix JSON structure
                 is_valid = "Vulnerabilities" in data or "Generated" in data
-                logger.info(f"🔍 AcunetixParser: JSON validation result: {is_valid}")
+                logger.info("AcunetixParser: JSON validation result: %s", is_valid)
                 return is_valid
             except Exception as e:
-                logger.error(f"💥 AcunetixParser: JSON validation error: {str(e)}")
+                logger.error("AcunetixParser: JSON validation error: %s", e)
                 return False
-        
-        logger.debug(f"❌ AcunetixParser: Unsupported file format")
+
+        logger.debug("AcunetixParser: Unsupported file format")
         return False
 
     def parse_findings(self, file_path: str) -> List[StandardizedFinding]:
         """Parse Acunetix file and return standardized findings"""
-        logger.info(f"🔍 AcunetixParser: Starting to parse findings from {file_path}")
-        
+        logger.info("AcunetixParser: Starting to parse findings from %s", file_path)
+
         try:
             if ".xml" in str(file_path):
                 findings = self._parse_xml_findings(file_path)
-                logger.info(f"✅ AcunetixParser: Successfully parsed {len(findings)} XML findings")
+                logger.info("AcunetixParser: Successfully parsed %s XML findings", len(findings))
                 return findings
             elif ".json" in str(file_path):
                 findings = self._parse_json_findings(file_path)
-                logger.info(f"✅ AcunetixParser: Successfully parsed {len(findings)} JSON findings")
+                logger.info("AcunetixParser: Successfully parsed %s JSON findings", len(findings))
                 return findings
             else:
-                logger.error("❌ AcunetixParser: Unsupported file format. Use .xml or .json")
+                logger.error("AcunetixParser: Unsupported file format. Use .xml or .json")
                 return []
         except Exception as e:
-            logger.error(f"💥 AcunetixParser: Failed to parse file: {str(e)}")
+            logger.error("AcunetixParser: Failed to parse file: %s", e)
             return []
 
     def _parse_xml_findings(self, file_path: str) -> List[StandardizedFinding]:
@@ -99,11 +99,11 @@ class AcunetixParser(BaseParser):
             findings = []
             dupes = {}
             
-            logger.debug(f"🔍 AcunetixParser: Processing XML root: {root.tag}")
-            
+            logger.debug("AcunetixParser: Processing XML root: %s", root.tag)
+
             # Process each Scan element
             for scan in root.findall("Scan"):
-                logger.debug(f"🔍 AcunetixParser: Processing scan element")
+                logger.debug("AcunetixParser: Processing scan element")
                 
                 # Get start URL
                 start_url = scan.findtext("StartURL")
@@ -115,13 +115,13 @@ class AcunetixParser(BaseParser):
                 if scan.findtext("StartTime") and scan.findtext("StartTime") != "":
                     try:
                         report_date = date_parser.parse(scan.findtext("StartTime"), dayfirst=True).date()
-                        logger.debug(f"🔍 AcunetixParser: Report date: {report_date}")
+                        logger.debug("AcunetixParser: Report date: %s", report_date)
                     except Exception as e:
-                        logger.warning(f"⚠️ AcunetixParser: Could not parse date: {e}")
+                        logger.warning("AcunetixParser: Could not parse date: %s", e)
                 
                 # Process each ReportItem (this is the correct element name!)
                 for item in scan.findall("ReportItems/ReportItem"):
-                    logger.debug(f"🔍 AcunetixParser: Processing report item")
+                    logger.debug("AcunetixParser: Processing report item")
                     
                     finding = self._create_finding_from_xml_item(item, start_url, report_date)
                     if finding:
@@ -135,7 +135,7 @@ class AcunetixParser(BaseParser):
                         ).hexdigest()
                         
                         if dupe_key in dupes:
-                            logger.debug(f"🔍 AcunetixParser: Merging duplicate finding: {finding.title}")
+                            logger.debug("AcunetixParser: Merging duplicate finding: %s", finding.title)
                             # Merge with existing finding
                             existing = dupes[dupe_key]
                             existing.description += f"\n\n--- Additional Instance ---\n\n{finding.description}"
@@ -144,15 +144,15 @@ class AcunetixParser(BaseParser):
                                     finding.raw_data["request_response_pairs"]
                                 )
                         else:
-                            logger.debug(f"🔍 AcunetixParser: Adding new finding: {finding.title}")
+                            logger.debug("AcunetixParser: Adding new finding: %s", finding.title)
                             dupes[dupe_key] = finding
                             findings.append(finding)
             
-            logger.info(f"🔍 AcunetixParser: Processed {len(findings)} unique findings from XML")
+            logger.info("AcunetixParser: Processed %s unique findings from XML", len(findings))
             return findings
-            
+
         except Exception as e:
-            logger.error(f"💥 AcunetixParser: Failed to parse XML: {str(e)}")
+            logger.error("AcunetixParser: Failed to parse XML: %s", e)
             return []
 
     def _create_finding_from_xml_item(self, item, start_url: str, report_date) -> Optional[StandardizedFinding]:
@@ -194,7 +194,7 @@ class AcunetixParser(BaseParser):
                         cwe_number = int(cwe_text.split("-")[1])
                         cwe_ids = [f"CWE-{cwe_number}"]
                     except (ValueError, IndexError):
-                        logger.warning(f"⚠️ AcunetixParser: Could not parse CWE: {cwe_text}")
+                        logger.warning("AcunetixParser: Could not parse CWE: %s", cwe_text)
                         
             # Also parse actual CVE list if present in XML
             for cve_item in item.findall("CVEList/CVE"):
@@ -227,8 +227,8 @@ class AcunetixParser(BaseParser):
                         cvss_vector = cvss_objects[0].clean_vector()
                         cvss_score = cvss_objects[0].scores()[0]  # Base score
                 except Exception as e:
-                    logger.warning(f"⚠️ AcunetixParser: Could not parse CVSS: {e}")
-            
+                    logger.warning("AcunetixParser: Could not parse CVSS: %s", e)
+
             # Get request/response pairs
             request_response_pairs = []
             if item.findall("TechnicalDetails/Request"):
@@ -248,7 +248,7 @@ class AcunetixParser(BaseParser):
                     )
                     affected_asset = endpoint.url
                 except Exception as e:
-                    logger.warning(f"⚠️ AcunetixParser: Could not parse endpoint: {e}")
+                    logger.warning("AcunetixParser: Could not parse endpoint: %s", e)
                     affected_asset = f"{start_url}{item.findtext('Affects')}"
             
             # Convert severity
@@ -288,7 +288,7 @@ class AcunetixParser(BaseParser):
             return finding
             
         except Exception as e:
-            logger.error(f"💥 AcunetixParser: Error creating finding from XML item: {str(e)}")
+            logger.error("AcunetixParser: Error creating finding from XML item: %s", e)
             return None
 
     def _parse_json_findings(self, file_path: str) -> List[StandardizedFinding]:
@@ -306,22 +306,22 @@ class AcunetixParser(BaseParser):
                 try:
                     scan_date = date_parser.parse(data["Generated"], dayfirst=True)
                 except Exception as e:
-                    logger.warning(f"⚠️ AcunetixParser: Could not parse scan date: {e}")
+                    logger.warning("AcunetixParser: Could not parse scan date: %s", e)
             
             text_maker = html2text.HTML2Text()
             text_maker.body_width = 0
             
-            logger.debug(f"🔍 AcunetixParser: Processing {len(data.get('Vulnerabilities', []))} JSON vulnerabilities")
-            
+            logger.debug("AcunetixParser: Processing %s JSON vulnerabilities", len(data.get('Vulnerabilities', [])))
+
             for item in data.get("Vulnerabilities", []):
-                logger.debug(f"🔍 AcunetixParser: Processing JSON vulnerability")
+                logger.debug("AcunetixParser: Processing JSON vulnerability")
                 
                 finding = self._create_finding_from_json_item(item, scan_date, text_maker)
                 if finding:
                     dupe_key = finding.title
                     
                     if dupe_key in dupes:
-                        logger.debug(f"🔍 AcunetixParser: Merging duplicate JSON finding: {finding.title}")
+                        logger.debug("AcunetixParser: Merging duplicate JSON finding: %s", finding.title)
                         # Merge with existing finding
                         existing = dupes[dupe_key]
                         existing.description += f"\n\n--- Additional Instance ---\n\n{finding.description}"
@@ -330,15 +330,15 @@ class AcunetixParser(BaseParser):
                                 finding.raw_data["request_response_pairs"]
                             )
                     else:
-                        logger.debug(f"🔍 AcunetixParser: Adding new JSON finding: {finding.title}")
+                        logger.debug("AcunetixParser: Adding new JSON finding: %s", finding.title)
                         dupes[dupe_key] = finding
                         findings.append(finding)
             
-            logger.info(f"🔍 AcunetixParser: Processed {len(findings)} unique findings from JSON")
+            logger.info("AcunetixParser: Processed %s unique findings from JSON", len(findings))
             return findings
-            
+
         except Exception as e:
-            logger.error(f"💥 AcunetixParser: Failed to parse JSON: {str(e)}")
+            logger.error("AcunetixParser: Failed to parse JSON: %s", e)
             return []
 
     def _create_finding_from_json_item(self, item: Dict, scan_date, text_maker) -> Optional[StandardizedFinding]:
@@ -364,7 +364,7 @@ class AcunetixParser(BaseParser):
                                 cwe_number = int(cwe_part)
                                 cwe_ids.append(f"CWE-{cwe_number}")
                             except ValueError:
-                                logger.warning(f"⚠️ AcunetixParser: Could not parse CWE: {cwe_part}")
+                                logger.warning("AcunetixParser: Could not parse CWE: %s", cwe_part)
                 
                 # Also check direct Cve field just in case
                 cve_raw = str(item["Classification"].get("Cve", ""))
@@ -429,8 +429,8 @@ class AcunetixParser(BaseParser):
                         cvss_vector = cvss_objects[0].clean_vector()
                         cvss_score = cvss_objects[0].scores()[0]  # Base score
                 except Exception as e:
-                    logger.warning(f"⚠️ AcunetixParser: Could not parse CVSS: {e}")
-            
+                    logger.warning("AcunetixParser: Could not parse CVSS: %s", e)
+
             # Convert severity
             severity_level = self._convert_severity(severity_text)
             
@@ -481,7 +481,7 @@ class AcunetixParser(BaseParser):
             return finding
             
         except Exception as e:
-            logger.error(f"💥 AcunetixParser: Error creating finding from JSON item: {str(e)}")
+            logger.error("AcunetixParser: Error creating finding from JSON item: %s", e)
             return None
 
     def _convert_severity(self, severity: str) -> SeverityLevel:

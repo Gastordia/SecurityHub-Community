@@ -18,8 +18,9 @@ urlpatterns = [
     path('api/auth/',include('accounts.urls')),
     path('api/config/', include('configapi.urls')),
     path('api/health/', include('utils.urls_health')),
-    
-    # ✅ NEW: OpenAPI/Swagger Documentation
+    path('api/webhooks/', include('webhooks.urls')),
+    path('api/dashboard/', include('dashboard.urls')),
+
     path('api/schema/', SpectacularAPIView.as_view(permission_classes=[IsAuthenticated]), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(permission_classes=[IsAuthenticated], url_name='schema'), name='swagger-ui'),
     path('api/redoc/', SpectacularRedocView.as_view(permission_classes=[IsAuthenticated], url_name='schema'), name='redoc'),

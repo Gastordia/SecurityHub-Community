@@ -39,7 +39,7 @@ class QualysParser(BaseParser):
                 "qualys", "scan", "vulnerability", "report", "knowledgebase"
             ])
         except Exception as e:
-            logger.debug(f"Qualys validation failed: {str(e)}")
+            logger.debug("Qualys validation failed: %s", e)
             return False
     
     def parse_findings(self, file_path: str) -> List[StandardizedFinding]:
@@ -65,7 +65,7 @@ class QualysParser(BaseParser):
             for path in possible_paths:
                 vuln_elements = root.findall(path)
                 if vuln_elements:
-                    logger.info(f"Found {len(vuln_elements)} vulnerabilities using path: {path}")
+                    logger.info("Found %s vulnerabilities using path: %s", len(vuln_elements), path)
                     break
             
             # If no vulnerabilities found, try to find any element with vulnerability-like attributes
@@ -79,11 +79,11 @@ class QualysParser(BaseParser):
                 if finding:
                     findings.append(finding)
             
-            logger.info(f"Parsed {len(findings)} findings from Qualys report")
+            logger.info("Parsed %s findings from Qualys report", len(findings))
             return findings
-            
+
         except Exception as e:
-            logger.error(f"Error parsing Qualys file: {str(e)}")
+            logger.error("Error parsing Qualys file: %s", e)
             return []
     
     def _create_finding_from_xml(self, vuln) -> StandardizedFinding:
@@ -149,7 +149,7 @@ class QualysParser(BaseParser):
             return finding
             
         except Exception as e:
-            logger.error(f"Error creating Qualys finding: {str(e)}")
+            logger.error("Error creating Qualys finding: %s", e)
             return None
     
     def _get_text(self, element, possible_names: List[str]) -> str:

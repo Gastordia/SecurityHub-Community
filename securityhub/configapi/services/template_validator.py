@@ -153,8 +153,14 @@ class ASTVisitor:
         if hasattr(node, 'attr'):
             attr = node.attr
             
-            # Forbidden attributes
-            forbidden = ['__class__', '__dict__', '__globals__', '__builtins__', '__subclasses__']
+            # Forbidden dunder attributes — SandboxedEnvironment blocks these at runtime too,
+            # but we catch them early here as an extra layer.
+            forbidden = {
+                '__class__', '__dict__', '__globals__', '__builtins__', '__subclasses__',
+                '__mro__', '__bases__', '__init__', '__new__', '__reduce__',
+                '__reduce_ex__', '__import__', '__loader__', '__spec__',
+                '__code__', '__func__', '__self__', '__wrapped__',
+            }
             if attr in forbidden:
                 self.errors.append(ValidationError(
                     type='security',
@@ -398,10 +404,10 @@ class TemplateValidator:
                                 variable=schema_var
                             ))
         except Exception as e:
-            logger.warning(f"Error validating variables: {str(e)}")
+            logger.warning("Error validating variables: %s", e)
             warnings.append(ValidationWarning(
                 type='variable',
-                message=f'Could not validate variables: {str(e)}'
+                message=f'Could not validate variables: {e}'
             ))
         
         return errors, warnings

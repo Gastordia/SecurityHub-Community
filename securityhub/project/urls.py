@@ -1,6 +1,6 @@
-from django.urls import path
+from django.urls import path, include
 from .views import project, image_upload, scope, parser
-from .views import vulnerability_crud, vulnerability_instances
+from .views import vulnerability_crud, vulnerability_instances, bulk_operations, retest, sla, comments
 from .views.image_upload import GetImageView
 
 urlpatterns = [
@@ -41,6 +41,8 @@ urlpatterns = [
     # ========================================================================
     path('vulnerabilities/<str:id>/', vulnerability_crud.vulnerability_view, name='vulnerability-detail'),
     path('vulnerabilities/<str:id>/status/', vulnerability_crud.project_vulnerability_status, name='vulnerability-status'),
+    path('vuln/<uuid:id>/enrich/', vulnerability_crud.enrich_vulnerability_view, name='enrich-vulnerability'),
+    path('projects/<str:id>/vulnerabilities/bulk/', bulk_operations.bulk_vulnerability_action, name='vulnerability-bulk-action'),
 
     # ========================================================================
     # VULNERABILITY INSTANCES - Nested Resource
@@ -62,4 +64,27 @@ urlpatterns = [
     # ========================================================================
     path('images/upload/', image_upload.ImageUploadView.as_view(), name='image-upload'),
     path('images/<str:id>/', GetImageView.as_view(), name='image-detail'),
+
+    # ========================================================================
+    # RETESTS
+    # ========================================================================
+    path('vulnerabilities/<str:vuln_id>/retests/', retest.vulnerability_retests, name='vulnerability-retests'),
+    path('vulnerabilities/<str:vuln_id>/retests/<uuid:retest_id>/', retest.retest_detail, name='vulnerability-retest-detail'),
+
+    # ========================================================================
+    # SLA
+    # ========================================================================
+    path('sla/policy/', sla.sla_policy, name='sla-policy'),
+    path('sla/breached/', sla.sla_breached_findings, name='sla-breached'),
+
+    # ========================================================================
+    # FINDING COMMENTS
+    # ========================================================================
+    path('vulnerabilities/<str:vuln_id>/comments/', comments.vulnerability_comments, name='vulnerability-comments'),
+    path('vulnerabilities/<str:vuln_id>/comments/<uuid:comment_id>/', comments.comment_detail, name='vulnerability-comment-detail'),
+
+    # ========================================================================
+    # ASSETS
+    # ========================================================================
+    path('projects/<str:id>/assets/', include('assets.urls')),
 ]

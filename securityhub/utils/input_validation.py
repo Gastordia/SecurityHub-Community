@@ -290,24 +290,21 @@ def validate_json_payload(
 ) -> Dict[str, Any]:
     """
     Validate JSON payload against schema.
-    
-    Similar to validate_query_params but for JSON request bodies.
-    
+
     Args:
         data: Dictionary from request body
         schema: Validation schema (same format as validate_query_params)
         strict: If True, raise error for unknown fields
-        
+
     Returns:
         Dictionary of validated data
-        
+
     Raises:
         APIValidationError: If validation fails
     """
     if not isinstance(data, dict):
         raise APIValidationError("Request body must be a JSON object", code='INVALID_JSON')
-    
-    # Check for unknown fields in strict mode
+
     if strict:
         unknown = set(data.keys()) - set(schema.keys())
         if unknown:
@@ -315,13 +312,76 @@ def validate_json_payload(
                 f"Unknown fields: {', '.join(unknown)}",
                 code='UNKNOWN_FIELDS'
             )
-    
-    # Use same validation logic as query params
-    return validate_query_params(
-        QueryDict('', mutable=True) if not data else QueryDict('', mutable=True),
-        schema,
-        strict
-    )
+
+    validated = {}
+    for param_name, param_config in schema.items():
+        value = data.get(param_name)
+
+        if param_config.get('required', False) and value is None:
+            raise APIValidationError(
+                f"Field '{param_name}' is required",
+                code='FIELD_REQUIRED',
+                field=param_name
+            )
+
+        if value is None:
+            validated[param_name] = param_config.get('default')
+            continue
+
+        param_type = param_config.get('type', str)
+        try:
+            if param_type == int:
+                value = int(value)
+            elif param_type == float:
+                value = float(value)
+            elif param_type == bool:
+                if isinstance(value, bool):
+                    pass
+                else:
+                    value = str(value).lower() in ('true', '1', 'yes', 'on')
+            elif param_type == list:
+                if not isinstance(value, list):
+                    value = [v.strip() for v in str(value).split(',')]
+            elif param_type == str:
+                value = str(value)
+        except (ValueError, TypeError):
+            raise APIValidationError(
+                f"Field '{param_name}' must be of type {param_type.__name__}",
+                code='INVALID_TYPE',
+                field=param_name
+            )
+
+        if isinstance(value, (int, float)):
+            if 'min' in param_config and value < param_config['min']:
+                raise APIValidationError(
+                    f"Field '{param_name}' must be at least {param_config['min']}",
+                    code='VALUE_TOO_SMALL',
+                    field=param_name
+                )
+            if 'max' in param_config and value > param_config['max']:
+                raise APIValidationError(
+                    f"Field '{param_name}' must be at most {param_config['max']}",
+                    code='VALUE_TOO_LARGE',
+                    field=param_name
+                )
+
+        if 'choices' in param_config and value not in param_config['choices']:
+            raise APIValidationError(
+                f"Field '{param_name}' must be one of {', '.join(map(str, param_config['choices']))}",
+                code='INVALID_CHOICE',
+                field=param_name
+            )
+
+        if 'regex' in param_config and not re.match(param_config['regex'], str(value)):
+            raise APIValidationError(
+                f"Field '{param_name}' does not match required format",
+                code='INVALID_FORMAT',
+                field=param_name
+            )
+
+        validated[param_name] = value
+
+    return validated
 
 
 def sanitize_string(value: str, max_length: Optional[int] = None) -> str:
@@ -520,7 +580,7 @@ def _validate_file_content(file: UploadedFile) -> None:
         b'MZ',  # Windows executable
         b'\x7fELF',  # Linux executable
         b'\xca\xfe\xba\xbe',  # Mach-O (macOS) executable
-        b'#!',  # Shell script (potential risk)
+        b'#!/',  # Shell script shebang (bare #! without / is a comment in many formats)
     ]
     
     for sig in executable_signatures:

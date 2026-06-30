@@ -36,68 +36,68 @@ class BaseParser(ABC):
         """Check if file exists and is readable"""
         try:
             if not os.path.exists(file_path):
-                logger.warning(f"❌ File does not exist: {file_path}")
+                logger.warning("File does not exist: %s", file_path)
                 return False
-            
+
             if not os.path.isfile(file_path):
-                logger.warning(f"❌ Path is not a file: {file_path}")
+                logger.warning("Path is not a file: %s", file_path)
                 return False
-            
+
             if not os.access(file_path, os.R_OK):
-                logger.warning(f"❌ File is not readable: {file_path}")
+                logger.warning("File is not readable: %s", file_path)
                 return False
-            
+
             # Check file size
             file_size = os.path.getsize(file_path)
             if file_size == 0:
-                logger.warning(f"❌ File is empty: {file_path}")
+                logger.warning("File is empty: %s", file_path)
                 return False
-            
+
             if file_size > 100 * 1024 * 1024:  # 100MB limit
-                logger.warning(f"❌ File is too large ({file_size} bytes): {file_path}")
+                logger.warning("File is too large (%s bytes): %s", file_size, file_path)
                 return False
-            
-            logger.debug(f"✅ File validation passed: {file_path} ({file_size} bytes)")
+
+            logger.debug("File validation passed: %s (%s bytes)", file_path, file_size)
             return True
-            
+
         except Exception as e:
-            logger.error(f"💥 Error validating file {file_path}: {str(e)}")
+            logger.error("Error validating file %s: %s", file_path, e)
             return False
     
     def validate_file_extension(self, file_path: str, allowed_extensions: List[str]) -> bool:
         """Validate file extension"""
         file_ext = os.path.splitext(file_path.lower())[1]
-        logger.debug(f"🔍 BaseParser: Checking file extension '{file_ext}' against allowed: {allowed_extensions}")
+        logger.debug("BaseParser: Checking file extension '%s' against allowed: %s", file_ext, allowed_extensions)
         if file_ext not in allowed_extensions:
-            logger.warning(f"❌ BaseParser: Unsupported file extension {file_ext} for {self.scanner_type}")
+            logger.warning("BaseParser: Unsupported file extension %s for %s", file_ext, self.scanner_type)
             return False
-        logger.debug(f"✅ BaseParser: File extension validation passed")
+        logger.debug("BaseParser: File extension validation passed")
         return True
     
     def safe_parse_xml(self, file_path: str):
         """Safely parse XML file with error handling"""
         try:
-            logger.debug(f"🔍 BaseParser: Parsing XML file: {file_path}")
+            logger.debug("BaseParser: Parsing XML file: %s", file_path)
             from ..xml import parse_xml_safely
             tree = parse_xml_safely(file_path)
             root = tree.getroot()
-            logger.debug(f"🔍 BaseParser: XML root tag: {root.tag}")
+            logger.debug("BaseParser: XML root tag: %s", root.tag)
             return root
         except Exception as e:
-            logger.error(f"💥 BaseParser: Error parsing XML file {file_path}: {str(e)}")
+            logger.error("BaseParser: Error parsing XML file %s: %s", file_path, e)
             return None
     
     def safe_parse_json(self, file_path: str):
         """Safely parse JSON file with error handling"""
         try:
-            logger.debug(f"🔍 BaseParser: Parsing JSON file: {file_path}")
+            logger.debug("BaseParser: Parsing JSON file: %s", file_path)
             import json
             with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-            logger.debug(f"🔍 BaseParser: JSON parsed successfully, keys: {list(data.keys()) if isinstance(data, dict) else 'not a dict'}")
+            logger.debug("BaseParser: JSON parsed successfully, keys: %s", list(data.keys()) if isinstance(data, dict) else 'not a dict')
             return data
         except Exception as e:
-            logger.error(f"💥 BaseParser: Error parsing JSON file {file_path}: {str(e)}")
+            logger.error("BaseParser: Error parsing JSON file %s: %s", file_path, e)
             return None
     
     def extract_text_safely(self, element, default: str = "") -> str:
@@ -163,7 +163,7 @@ class BaseParser(ABC):
         
         for field in required_fields:
             if field not in finding_data or not finding_data[field]:
-                logger.warning(f"❌ Missing required field '{field}' in finding data")
+                logger.warning("Missing required field '%s' in finding data", field)
                 return False
         
         return True
@@ -175,10 +175,10 @@ class BaseParser(ABC):
         
         try:
             finding = StandardizedFinding(**finding_data)
-            logger.debug(f"✅ Created StandardizedFinding: {finding.title}")
+            logger.debug("Created StandardizedFinding: %s", finding.title)
             return finding
         except Exception as e:
-            logger.error(f"💥 Error creating StandardizedFinding: {str(e)}")
+            logger.error("Error creating StandardizedFinding: %s", e)
             return None
     
     def extract_standard_metadata_fields(self, raw_data: Dict[str, Any]) -> Dict[str, Any]:

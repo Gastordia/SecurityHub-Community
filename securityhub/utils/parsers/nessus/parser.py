@@ -40,7 +40,7 @@ class NessusParser(BaseParser):
 
     def validate_file(self, file_path: str) -> bool:
         """Validate if file is a valid Nessus report"""
-        logger.debug(f"🔍 NessusParser: Validating file: {file_path}")
+        logger.debug("NessusParser: Validating file: %s", file_path)
         
         file_path_str = str(file_path).lower()
         
@@ -51,35 +51,35 @@ class NessusParser(BaseParser):
                     # Check for common Nessus CSV headers
                     valid_headers = ['Name', 'Plugin Name', 'Severity', 'Risk', 'asset.name']
                     is_valid = any(header in first_line for header in valid_headers)
-                    logger.debug(f"🔍 NessusParser: CSV validation result: {is_valid}")
+                    logger.debug("NessusParser: CSV validation result: %s", is_valid)
                     return is_valid
             except Exception as e:
-                logger.error(f"💥 NessusParser: CSV validation error: {str(e)}")
+                logger.error("NessusParser: CSV validation error: %s", e)
                 return False
         elif file_path_str.endswith(('.xml', '.nessus')):
             try:
                 root = parse(file_path).getroot()
                 # Check for Nessus XML structure
                 is_valid = "NessusClientData_v2" in root.tag
-                logger.debug(f"🔍 NessusParser: XML validation result: {is_valid}")
+                logger.debug("NessusParser: XML validation result: %s", is_valid)
                 return is_valid
             except Exception as e:
-                logger.error(f"💥 NessusParser: XML validation error: {str(e)}")
+                logger.error("NessusParser: XML validation error: %s", e)
                 return False
-        
-        logger.debug(f"🔍 NessusParser: Unsupported file format: {file_path_str}")
+
+        logger.debug("NessusParser: Unsupported file format: %s", file_path_str)
         return False
 
     def parse_findings(self, file_path: str) -> List[StandardizedFinding]:
         """Parse Nessus file and return standardized findings"""
-        logger.info(f"🔍 NessusParser: Starting to parse findings from {file_path}")
-        
+        logger.info("NessusParser: Starting to parse findings from %s", file_path)
+
         if str(file_path).lower().endswith(('.xml', '.nessus')):
             return self._parse_xml_findings(file_path)
         elif str(file_path).lower().endswith('.csv'):
             return self._parse_csv_findings(file_path)
         else:
-            logger.error("💥 NessusParser: Filename extension not recognized. Use .xml, .nessus or .csv")
+            logger.error("NessusParser: Filename extension not recognized. Use .xml, .nessus or .csv")
             return []
 
     def _parse_xml_findings(self, file_path: str) -> List[StandardizedFinding]:
@@ -89,7 +89,7 @@ class NessusParser(BaseParser):
             root = tree.getroot()
             
             if "NessusClientData_v2" not in root.tag:
-                logger.error("💥 NessusParser: This doesn't seem to be a valid Nessus XML file.")
+                logger.error("NessusParser: This doesn't seem to be a valid Nessus XML file.")
                 return []
             
             findings = []
@@ -118,11 +118,11 @@ class NessusParser(BaseParser):
                                         existing.raw_data["affected_endpoints"] = []
                                     existing.raw_data["affected_endpoints"].extend(finding.raw_data["affected_endpoints"])
             
-            logger.info(f"✅ NessusParser: Successfully parsed {len(findings)} findings from XML")
+            logger.info("NessusParser: Successfully parsed %s findings from XML", len(findings))
             return findings
-            
+
         except Exception as e:
-            logger.error(f"💥 NessusParser: Failed to parse Nessus XML file: {str(e)}")
+            logger.error("NessusParser: Failed to parse Nessus XML file: %s", e)
             return []
 
     def _parse_xml_item(
@@ -391,7 +391,7 @@ class NessusParser(BaseParser):
             return finding
             
         except Exception as e:
-            logger.error(f"💥 NessusParser: Error parsing XML item: {str(e)}")
+            logger.error("NessusParser: Error parsing XML item: %s", e)
             return None
 
     def _parse_csv_findings(self, file_path: str) -> List[StandardizedFinding]:
@@ -418,7 +418,7 @@ class NessusParser(BaseParser):
             # Validate required fields - check for common Nessus CSV column names
             required_fields = ['Name', 'Plugin Name', 'Plugin ID', 'asset.name']
             if not any(field in reader.fieldnames for field in required_fields):
-                logger.warning(f"⚠️ NessusParser: CSV may be missing standard fields. Available fields: {reader.fieldnames}")
+                logger.warning("NessusParser: CSV may be missing standard fields. Available fields: %s", reader.fieldnames)
                 # Don't return empty - try to parse anyway as CSV formats vary
             
             for row in reader:
@@ -438,11 +438,11 @@ class NessusParser(BaseParser):
                                 existing.raw_data["affected_endpoints"] = []
                             existing.raw_data["affected_endpoints"].extend(finding.raw_data["affected_endpoints"])
             
-            logger.info(f"✅ NessusParser: Successfully parsed {len(findings)} findings from CSV")
+            logger.info("NessusParser: Successfully parsed %s findings from CSV", len(findings))
             return findings
-            
+
         except Exception as e:
-            logger.error(f"💥 NessusParser: Failed to parse Nessus CSV file: {str(e)}")
+            logger.error("NessusParser: Failed to parse Nessus CSV file: %s", e)
             return []
 
     def _parse_csv_row(self, row: Dict[str, str]) -> Optional[StandardizedFinding]:
@@ -708,7 +708,7 @@ class NessusParser(BaseParser):
             return finding
             
         except Exception as e:
-            logger.error(f"💥 NessusParser: Error parsing CSV row: {str(e)}")
+            logger.error("NessusParser: Error parsing CSV row: %s", e)
             return None
 
     def _detect_delimiter(self, content: str) -> str:

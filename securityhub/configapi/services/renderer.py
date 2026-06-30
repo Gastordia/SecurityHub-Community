@@ -195,7 +195,5 @@ class Renderer:
         for filter_name in unsafe_filters:
             self.env.filters.pop(filter_name, None)
         
-        logger.debug(
-            f"Template renderer initialized with {len(self.env.filters)} safe filters"
-        )
+        logger.debug("Template renderer initialized with %d safe filters", len(self.env.filters))
 

@@ -20,6 +20,19 @@ def update_vulnerability(sender, instance, created, **kwargs):
     # (e.g. manually marking a vulnerability as Confirm Fixed via the API).
     pass
 
+
+@receiver(post_save, sender=Vulnerability)
+def enrich_vulnerability_on_create(sender, instance, created, **kwargs):
+    """
+    Kick off CVE/NVD + EPSS enrichment in a background thread when a new
+    Vulnerability is created and has at least one CVE ID.
+    """
+    if created and instance.cve:
+        from .tasks import enrich_vulnerability_cve
+        import threading
+        t = threading.Thread(target=enrich_vulnerability_cve, args=(instance.id,), daemon=True)
+        t.start()
+
 @receiver(post_save, sender=VulnerableInstance)
 def update_vulnerableinstance(sender, instance, created, **kwargs):
     """

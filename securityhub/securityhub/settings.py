@@ -13,8 +13,11 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from json import loads
 from pathlib import Path
 import os
+import logging as _logging
 from django.core.exceptions import ImproperlyConfigured
 from datetime import timedelta
+
+_settings_logger = _logging.getLogger(__name__)
 try:
     from dotenv import load_dotenv
     _load_dotenv = load_dotenv
@@ -117,11 +120,11 @@ if CORS_ALLOWED_ORIGINS_STR:
         for origin in CORS_ALLOWED_ORIGINS_STR.split(',') 
         if origin.strip()
     ]
-    print(f"✅ CORS: Using {len(CORS_ALLOWED_ORIGINS)} origins from environment variable")
+    _settings_logger.info("CORS: Using %d origins from environment variable", len(CORS_ALLOWED_ORIGINS))
 elif DEBUG:
     # Development mode: use defaults but log warning
     CORS_ALLOWED_ORIGINS = DEV_CORS_ORIGINS
-    print("[WARN] CORS: Using development defaults (DEBUG=True). Set CORS_ALLOWED_ORIGINS for production!")
+    _settings_logger.warning("CORS: Using development defaults (DEBUG=True). Set CORS_ALLOWED_ORIGINS for production!")
 else:
     # Production mode without CORS_ALLOWED_ORIGINS: CRITICAL ERROR
     raise ImproperlyConfigured(
@@ -196,12 +199,15 @@ INSTALLED_APPS = [
     # WeasyPrint imports are lazy-loaded to avoid startup errors if GTK+ libraries are missing
     'rest_framework_simplejwt.token_blacklist',
     'storages',
-    'drf_spectacular',  # ✅ NEW: OpenAPI/Swagger documentation
+    'drf_spectacular',
+    'webhooks',
+    'assets',
+    'dashboard',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',  # ✅ CORS middleware must be early to handle preflight OPTIONS requests
+    'corsheaders.middleware.CorsMiddleware',  # must be early to handle preflight OPTIONS requests
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -232,6 +238,8 @@ if DEBUG and ENABLE_DEBUG_TOOLBAR:
         # If the package isn't installed, just skip it (avoid crashing the app)
         pass
 
+PAGINATION_STANDARD_PAGE_SIZE = int(os.getenv('PAGINATION_STANDARD_PAGE_SIZE', 25))
+
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         #'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -252,9 +260,8 @@ REST_FRAMEWORK = {
         'admin': os.getenv('THROTTLE_RATE_ADMIN', '500/minute'),  # Admin/superuser operations
         'burst': os.getenv('THROTTLE_RATE_BURST', '100/minute'),  # Burst protection
     },
-    # Pagination Configuration (Issue #18)
     'DEFAULT_PAGINATION_CLASS': 'utils.pagination.StandardResultsSetPagination',
-    'PAGE_SIZE': int(os.getenv('PAGINATION_STANDARD_PAGE_SIZE', 25)),  # Default page size
+    'PAGE_SIZE': PAGINATION_STANDARD_PAGE_SIZE,
     # OpenAPI schema
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
@@ -270,7 +277,7 @@ SITE_NAME = os.getenv('SITE_NAME', 'SecurityHub')
 SITE_SUPPORT_EMAIL = os.getenv('SITE_SUPPORT_EMAIL', 'support@securityhub.community')
 
 # Pagination page sizes (utils/pagination.py reads these).
-PAGINATION_STANDARD_PAGE_SIZE = int(os.getenv('PAGINATION_STANDARD_PAGE_SIZE', 25))
+# PAGINATION_STANDARD_PAGE_SIZE is defined before REST_FRAMEWORK above.
 PAGINATION_STANDARD_MAX_PAGE_SIZE = int(os.getenv('PAGINATION_STANDARD_MAX_PAGE_SIZE', 100))
 PAGINATION_LARGE_PAGE_SIZE = int(os.getenv('PAGINATION_LARGE_PAGE_SIZE', 100))
 PAGINATION_LARGE_MAX_PAGE_SIZE = int(os.getenv('PAGINATION_LARGE_MAX_PAGE_SIZE', 500))
@@ -486,7 +493,7 @@ if LOG_DIR and not os.path.exists(LOG_DIR):
     except (OSError, PermissionError):
         # If we can't create log directory, disable file logging
         LOG_FILE_PATH = None
-        print(f"⚠️  WARNING: Cannot create log directory {LOG_DIR}. File logging disabled.")
+        _settings_logger.warning("Cannot create log directory %s. File logging disabled.", LOG_DIR)
 
 
 def _can_write_logfile(path):
@@ -500,7 +507,7 @@ def _can_write_logfile(path):
             pass
         return True
     except (OSError, PermissionError) as exc:
-        print(f"⚠️  WARNING: Cannot write to log file {path}: {exc}. File logging disabled.")
+        _settings_logger.warning("Cannot write to log file %s: %s. File logging disabled.", path, exc)
         return False
 
 try:
@@ -617,7 +624,7 @@ if LOG_FILE_PATH and not RUNNING_TESTS:
         for logger_name in LOGGING['loggers']:
             LOGGING['loggers'][logger_name]['handlers'].append('rotating_logfile')
 
-        print(f"[OK] Logging: File logging enabled to {LOG_FILE_PATH}")
+        _settings_logger.info("Logging: File logging enabled to %s", LOG_FILE_PATH)
 
 
 CKEDITOR_ALLOW_NONIMAGE_FILES = False
@@ -669,7 +676,7 @@ EMAIL_THROTTLE_RATE = int(os.getenv('EMAIL_THROTTLE_RATE', 100))  # Max emails p
 # Frontend URL for email links
 FRONTEND_URL = os.getenv('FRONTEND_URL')
 
-# ✅ NEW: OpenAPI/Swagger Configuration
+# OpenAPI/Swagger Configuration
 SPECTACULAR_SETTINGS = {
     'TITLE': f'{SITE_NAME} API Documentation',
     'DESCRIPTION': f'{SITE_NAME} - Complete API Documentation',

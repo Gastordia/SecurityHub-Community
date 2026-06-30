@@ -82,7 +82,7 @@ class OpenVASParser(BaseParser):
 
             return findings
         except Exception as e:
-            logger.error(f"Failed to parse OpenVAS XML file: {e}")
+            logger.error("Failed to parse OpenVAS XML file: %s", e)
             return []
 
     def _parse_xml_result(self, result) -> Optional[StandardizedFinding]:
@@ -193,7 +193,7 @@ class OpenVASParser(BaseParser):
             return finding
 
         except Exception as e:
-            logger.error(f"Error parsing OpenVAS XML result: {e}")
+            logger.error("Error parsing OpenVAS XML result: %s", e)
             return None
 
     # ── CSV ───────────────────────────────────────────────────────────────────
@@ -289,7 +289,7 @@ class OpenVASParser(BaseParser):
                 },
             )
         except Exception as e:
-            logger.error(f"Error parsing OpenVAS CSV row: {e}")
+            logger.error("Error parsing OpenVAS CSV row: %s", e)
             return None
 
     # ── Helpers ───────────────────────────────────────────────────────────────

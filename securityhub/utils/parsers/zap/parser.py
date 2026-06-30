@@ -76,7 +76,7 @@ class ZAPParser(BaseParser):
             tree = parse(file_path)
             return self._parse_items(tree)
         except Exception as e:
-            logger.error(f"Failed to parse ZAP file: {e}")
+            logger.error("Failed to parse ZAP file: %s", e)
             return []
 
     def _parse_items(self, tree) -> List[StandardizedFinding]:
@@ -212,7 +212,7 @@ class ZAPParser(BaseParser):
             return finding
 
         except Exception as e:
-            logger.error(f"Error creating ZAP finding: {e}")
+            logger.error("Error creating ZAP finding: %s", e)
             return None
 
     def _text(self, element, tag: str) -> Optional[str]:

@@ -33,32 +33,32 @@ class AppSpiderParser(BaseParser):
 
     def validate_file(self, file_path: str) -> bool:
         """Validate if file is a valid AppSpider report"""
-        logger.debug(f"🔍 AppSpiderParser: Starting validation for {file_path}")
+        logger.debug("AppSpiderParser: Starting validation for %s", file_path)
         
         if not str(file_path).lower().endswith('.xml'):
-            logger.debug(f"❌ AppSpiderParser: Invalid file extension for {file_path}")
+            logger.debug("AppSpiderParser: Invalid file extension for %s", file_path)
             return False
-        
+
         try:
-            logger.debug(f"🔍 AppSpiderParser: Parsing XML file...")
+            logger.debug("AppSpiderParser: Parsing XML file...")
             vscan = parse(file_path)
             root = vscan.getroot()
-            logger.debug(f"🔍 AppSpiderParser: Root tag: {root.tag}")
-            
+            logger.debug("AppSpiderParser: Root tag: %s", root.tag)
+
             # Check for AppSpider XML structure - must have VulnSummary tag
             is_valid = "VulnSummary" in str(root.tag)
-            logger.info(f"🔍 AppSpiderParser: Validation result: {is_valid}")
+            logger.info("AppSpiderParser: Validation result: %s", is_valid)
             return is_valid
         except Exception as e:
-            logger.error(f"💥 AppSpiderParser: Validation error: {str(e)}")
+            logger.error("AppSpiderParser: Validation error: %s", e)
             return False
 
     def parse_findings(self, file_path: str) -> List[StandardizedFinding]:
         """Parse AppSpider XML file and return standardized findings"""
-        logger.info(f"🔍 AppSpiderParser: Starting to parse findings from {file_path}")
-        
+        logger.info("AppSpiderParser: Starting to parse findings from %s", file_path)
+
         if file_path is None:
-            logger.error("❌ AppSpiderParser: No file path provided")
+            logger.error("AppSpiderParser: No file path provided")
             return []
 
         try:
@@ -70,25 +70,25 @@ class AppSpiderParser(BaseParser):
                     "Please ensure that you are uploading AppSpider's VulnerabilitiesSummary.xml file. "
                     "At this time it is the only file that is consumable by SecurityHub."
                 )
-                logger.error(f"❌ AppSpiderParser: {msg}")
+                logger.error("AppSpiderParser: %s", msg)
                 return []
 
             findings = self._process_findings(root)
-            logger.info(f"✅ AppSpiderParser: Successfully parsed {len(findings)} findings")
+            logger.info("AppSpiderParser: Successfully parsed %s findings", len(findings))
             return findings
-            
+
         except Exception as e:
-            logger.error(f"💥 AppSpiderParser: Failed to parse file: {str(e)}")
+            logger.error("AppSpiderParser: Failed to parse file: %s", e)
             return []
 
     def _process_findings(self, root) -> List[StandardizedFinding]:
         """Process XML root and return standardized findings"""
-        logger.debug(f"🔍 AppSpiderParser: Processing XML root: {root.tag}")
-        
+        logger.debug("AppSpiderParser: Processing XML root: %s", root.tag)
+
         dupes = {}
 
         for finding in root.iter("Vuln"):
-            logger.debug(f"🔍 AppSpiderParser: Processing Vuln element")
+            logger.debug("AppSpiderParser: Processing Vuln element")
             
             try:
                 # Extract basic information using correct element names
@@ -114,12 +114,12 @@ class AppSpiderParser(BaseParser):
                 dupe_key = severity + title
 
                 if dupe_key in dupes:
-                    logger.debug(f"🔍 AppSpiderParser: Merging duplicate finding: {title}")
+                    logger.debug("AppSpiderParser: Merging duplicate finding: %s", title)
                     existing_finding = dupes[dupe_key]
                     # Add new attack data
                     self._add_attack_data_to_finding(finding, existing_finding)
                 else:
-                    logger.debug(f"🔍 AppSpiderParser: Adding new finding: {title}")
+                    logger.debug("AppSpiderParser: Adding new finding: %s", title)
                     new_finding = self._create_standardized_finding(
                         title, description, mitigation, severity, cwe, vuln_url
                     )
@@ -128,10 +128,10 @@ class AppSpiderParser(BaseParser):
                     dupes[dupe_key] = new_finding
                     
             except Exception as e:
-                logger.error(f"💥 AppSpiderParser: Error processing Vuln element: {str(e)}")
+                logger.error("AppSpiderParser: Error processing Vuln element: %s", e)
                 continue
 
-        logger.info(f"🔍 AppSpiderParser: Processed {len(dupes)} unique findings")
+        logger.info("AppSpiderParser: Processed %s unique findings", len(dupes))
         return list(dupes.values())
 
     def _create_standardized_finding(self, title: str, description: str, mitigation: str, 
@@ -183,7 +183,7 @@ class AppSpiderParser(BaseParser):
 
     def _add_attack_data_to_finding(self, finding_element, finding: StandardizedFinding):
         """Add attack request/response data to finding"""
-        logger.debug(f"🔍 AppSpiderParser: Adding attack data to finding: {finding.title}")
+        logger.debug("AppSpiderParser: Adding attack data to finding: %s", finding.title)
         
         for attack in finding_element.iter("AttackRequest"):
             try:
@@ -202,9 +202,9 @@ class AppSpiderParser(BaseParser):
                     "response": resp
                 })
                 
-                logger.debug(f"🔍 AppSpiderParser: Added attack request/response pair")
+                logger.debug("AppSpiderParser: Added attack request/response pair")
             except Exception as e:
-                logger.warning(f"⚠️ AppSpiderParser: Error processing attack request: {str(e)}")
+                logger.warning("AppSpiderParser: Error processing attack request: %s", e)
 
     @staticmethod
     def convert_severity(val):

@@ -152,9 +152,6 @@ class SandboxDataGenerator:
         Returns:
             Dictionary with chart data structures
         """
-        from datetime import datetime, timedelta
-        import random
-        
         # Severity distribution
         severity_counts = {
             'Critical': random.randint(1, 5),
@@ -218,7 +215,6 @@ class SandboxDataGenerator:
         
         # Standardized timeline data (30 days)
         timeline_data = []
-        from datetime import datetime, timedelta
         current_date = datetime.now() - timedelta(days=30)
         for i in range(30):
             timeline_data.append({

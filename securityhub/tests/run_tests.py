@@ -20,8 +20,7 @@ def run_tests():
     sys.path.insert(0, project_root)
     sys.path.insert(0, root_dir)
     
-    # Set up Django settings - use the test_settings.py from root directory
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'test_settings')
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'securityhub.settings_test')
     
     # Configure Django
     django.setup()

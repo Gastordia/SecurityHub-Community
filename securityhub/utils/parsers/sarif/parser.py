@@ -78,7 +78,7 @@ class SARIFParser(BaseParser):
             with open(file_path, "r", encoding="utf-8") as f:
                 sarif = json.load(f)
         except Exception as e:
-            logger.error(f"SARIFParser: failed to load file: {e}")
+            logger.error("SARIFParser: failed to load file: %s", e)
             return []
 
         findings: List[StandardizedFinding] = []
@@ -100,7 +100,7 @@ class SARIFParser(BaseParser):
                             f"\n\n--- Additional Location ---\n\n{finding.description}"
                         )
 
-        logger.info(f"SARIFParser: parsed {len(findings)} findings")
+        logger.info("SARIFParser: parsed %s findings", len(findings))
         return findings
 
     # ── Internal ──────────────────────────────────────────────────────────────
@@ -210,7 +210,7 @@ class SARIFParser(BaseParser):
             return finding
 
         except Exception as e:
-            logger.error(f"SARIFParser: error parsing result: {e}")
+            logger.error("SARIFParser: error parsing result: %s", e)
             return None
 
     # ── Helpers ───────────────────────────────────────────────────────────────
