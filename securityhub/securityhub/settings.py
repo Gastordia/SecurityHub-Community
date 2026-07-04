@@ -58,11 +58,20 @@ AUTH_COOKIE_SECURE = os.getenv("AUTH_COOKIE_SECURE", ("false" if DEBUG else "tru
 
 # VulnDB GitHub source — raw URL to a JSON array of vulnerability templates.
 # Set to a raw.githubusercontent.com URL pointing to your community vulndb file.
-VULNDB_GITHUB_URL = os.getenv("VULNDB_GITHUB_URL", "")
+VULNDB_GITHUB_URL = os.getenv(
+    "VULNDB_GITHUB_URL",
+    "https://raw.githubusercontent.com/Gastordia/SecurityHub-VulnDB/master/vulnerabilities.json",
+)
 
 # Project types / report standards GitHub sources — same pattern as VulnDB above.
-PROJECT_TYPES_GITHUB_URL = os.getenv("PROJECT_TYPES_GITHUB_URL", "")
-REPORT_STANDARDS_GITHUB_URL = os.getenv("REPORT_STANDARDS_GITHUB_URL", "")
+PROJECT_TYPES_GITHUB_URL = os.getenv(
+    "PROJECT_TYPES_GITHUB_URL",
+    "https://raw.githubusercontent.com/Gastordia/SecurityHub-Config/master/project-types.json",
+)
+REPORT_STANDARDS_GITHUB_URL = os.getenv(
+    "REPORT_STANDARDS_GITHUB_URL",
+    "https://raw.githubusercontent.com/Gastordia/SecurityHub-Config/master/report-standards.json",
+)
 
 # CWE reference dataset, refreshed periodically by vulnerability.tasks.update_cwe_json.
 # Defaults to a public CWE JSON mirror; override to point at your own fork/mirror.
