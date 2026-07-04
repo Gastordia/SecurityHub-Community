@@ -11,6 +11,7 @@ import { standardizedApiClient } from '@/lib/standardized-api-client'
 import { PageSpinner, EmptyState } from '@/components/ui/Spinner'
 import { StatusBadge } from '@/components/ui/Badge'
 import { SeverityBar } from '@/components/ui/SeverityBar'
+import { TrendChart } from '@/components/ui/TrendChart'
 import { Button } from '@/components/ui/Button'
 
 function StatCard({
@@ -44,6 +45,19 @@ function ProjectCard({ project }: { project: any }) {
     staleTime: 60_000,
   })
 
+  const { data: trendRaw } = useQuery({
+    queryKey: ['project-trend', project.id],
+    queryFn: () => standardizedApiClient.getProjectTrend(project.id, { days: 14 }),
+    staleTime: 300_000,
+  })
+
+  const trendData = Array.isArray(trendRaw)
+    ? trendRaw.map((d: any) => ({
+        label: String(d.date ?? '').slice(5), // "MM-DD"
+        value: d.total_open ?? 0,
+      }))
+    : []
+
   return (
     <Link
       to={`/workspace/${project.id}`}
@@ -73,6 +87,12 @@ function ProjectCard({ project }: { project: any }) {
         low={stats?.severity_counts?.Low ?? 0}
         info={stats?.severity_counts?.Info ?? 0}
       />
+      {trendData.length > 1 && (
+        <div className="mt-3 pt-3 border-t border-border-subtle">
+          <p className="text-[10px] text-text-muted mb-1">Open findings (14d)</p>
+          <TrendChart data={trendData} height={40} />
+        </div>
+      )}
     </Link>
   )
 }

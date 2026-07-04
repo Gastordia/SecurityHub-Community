@@ -139,6 +139,10 @@ export const standardizedApiClient = {
     const response = await apiClient.get('/api/project/dashboard/summary/')
     return response.data
   },
+  async getProjectTrend(projectId: string | number, params?: { days?: number }) {
+    const response = await apiClient.get(`/api/dashboard/projects/${projectId}/trend/`, { params })
+    return response.data
+  },
   async generateProjectReport(id: string | number, data?: Record<string, any>) {
     const response = await apiClient.post(`/api/project/projects/${id}/report/`, data ?? {}, {
       responseType: 'blob',
@@ -263,6 +267,10 @@ export const standardizedApiClient = {
   },
   async createRetest(vulnId: string | number, data: Record<string, any>) {
     const response = await apiClient.post(`/api/project/vulnerabilities/${vulnId}/retests/`, data)
+    return response.data
+  },
+  async updateRetest(vulnId: string | number, retestId: string, data: Record<string, any>) {
+    const response = await apiClient.patch(`/api/project/vulnerabilities/${vulnId}/retests/${retestId}/`, data)
     return response.data
   },
   async deleteRetest(vulnId: string | number, retestId: string) {

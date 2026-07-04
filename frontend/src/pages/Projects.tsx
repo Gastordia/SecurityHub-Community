@@ -204,6 +204,7 @@ export default function ProjectsPage() {
   const create = useMutation({
     mutationFn: (d: any) => {
       const payload: Record<string, any> = { name: d.name }
+      if (d.description) payload.description = d.description
       if (d.startdate) payload.startdate = d.startdate
       if (d.enddate) payload.enddate = d.enddate
       if (d.projecttype) payload.projecttype = d.projecttype

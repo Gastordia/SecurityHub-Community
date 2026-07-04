@@ -82,19 +82,18 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           }
 
           const user: User = {
-            id: (profileData as any).id ?? 0,
-            username: username,
-            email: email,
+            // Defaults from login response
+            id: 0,
+            username,
+            email,
             first_name: username,
             last_name: '',
             is_active: true,
-            is_staff: isStaff,
-            is_superuser: isAdmin,
-            user_type: isStaff ? 'staff' : 'customer',
             last_login: new Date().toISOString(),
             date_joined: new Date().toISOString(),
+            // Profile data overrides defaults (contains real id, name, etc.)
             ...profileData,
-            // Keep values from the login token (authoritative for permissions)
+            // Login token is authoritative for permissions — always wins
             is_staff: isStaff,
             is_superuser: isAdmin,
             user_type: ((profileData as any).user_type as 'staff' | 'customer') || (isStaff ? 'staff' : 'customer'),
