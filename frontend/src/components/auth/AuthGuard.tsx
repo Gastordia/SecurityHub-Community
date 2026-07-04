@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/stores/auth-store'
+import { PageSpinner } from '@/components/ui/Spinner'
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, token, checkAuthStatus } = useAuthStore()
@@ -15,7 +16,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (checking) return null  // brief blank while cookie auth resolves
+  if (checking) return <PageSpinner />
   if (!isAuthenticated) return <Navigate to="/login" state={{ from: location }} replace />
   return <>{children}</>
 }

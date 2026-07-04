@@ -370,7 +370,7 @@ function WebhooksTab({ isAdmin }: { isAdmin: boolean }) {
 
 function SLAPolicyTab({ isAdmin }: { isAdmin: boolean }) {
   const qc = useQueryClient()
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['sla-policy'],
     queryFn: () => standardizedApiClient.getSLAPolicy(),
   })
@@ -397,6 +397,7 @@ function SLAPolicyTab({ isAdmin }: { isAdmin: boolean }) {
     setForm(f => ({ ...(f ?? data ?? {}), [k]: Number(e.target.value) }))
 
   if (isLoading) return <PageSpinner />
+  if (isError) return <ErrorState />
 
   return (
     <div className="space-y-4 max-w-sm">

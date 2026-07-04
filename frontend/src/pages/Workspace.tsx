@@ -731,7 +731,7 @@ function FindingsTab({ projectId }: { projectId: string }) {
   const [showCreate, setShowCreate] = useState(false)
   const [editTarget, setEditTarget] = useState<any>(null)
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
-  const [drawerVuln, setDrawerVuln] = useState<any>(null)
+  const [drawerVulnId, setDrawerVulnId] = useState<string | number | null>(null)
   const [search, setSearch] = useState('')
   const [filterSev, setFilterSev] = useState('All')
   const [filterStatus, setFilterStatus] = useState('All')
@@ -748,6 +748,7 @@ function FindingsTab({ projectId }: { projectId: string }) {
     queryFn: () => standardizedApiClient.getProjectVulnerabilities(projectId),
   })
   const vulns = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
+  const drawerVuln = drawerVulnId != null ? vulns.find((v: any) => v.id === drawerVulnId) ?? null : null
 
   const { data: stats } = useQuery({
     queryKey: ['vuln-stats', projectId],
@@ -774,7 +775,7 @@ function FindingsTab({ projectId }: { projectId: string }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vulns', projectId] })
       setEditTarget(null)
-      if (drawerVuln?.id === editTarget?.id) setDrawerVuln(null)
+      if (drawerVulnId === editTarget?.id) setDrawerVulnId(null)
       toast.success('Updated')
     },
     onError: (e: any) => toast.error(e?.message || 'Failed'),
@@ -783,7 +784,7 @@ function FindingsTab({ projectId }: { projectId: string }) {
     mutationFn: () => standardizedApiClient.deleteVulnerability(deleteTarget.id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['vulns', projectId] })
-      if (drawerVuln?.id === deleteTarget?.id) setDrawerVuln(null)
+      if (drawerVulnId === deleteTarget?.id) setDrawerVulnId(null)
       setDeleteTarget(null)
       toast.success('Deleted')
     },
@@ -894,7 +895,7 @@ function FindingsTab({ projectId }: { projectId: string }) {
               {filtered.map((v: any) => (
                 <tr
                   key={v.id}
-                  onClick={() => !bulkMode && setDrawerVuln(v)}
+                  onClick={() => !bulkMode && setDrawerVulnId(v.id)}
                   className={`hover:bg-app-overlay/50 transition-colors ${!bulkMode ? 'cursor-pointer' : ''} ${selectedIds.has(v.id) ? 'bg-accent-500/5' : ''}`}
                 >
                   {bulkMode && (
@@ -943,8 +944,8 @@ function FindingsTab({ projectId }: { projectId: string }) {
         <FindingDrawer
           vuln={drawerVuln}
           projectId={projectId}
-          onClose={() => setDrawerVuln(null)}
-          onEdit={() => { setEditTarget(drawerVuln); setDrawerVuln(null) }}
+          onClose={() => setDrawerVulnId(null)}
+          onEdit={() => { setEditTarget(drawerVuln); setDrawerVulnId(null) }}
         />
       )}
 
@@ -1646,7 +1647,7 @@ export default function WorkspacePage() {
 
   const updateStatus = useMutation({
     mutationFn: (status: string) => standardizedApiClient.updateProject(id!, { status }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workspace', id] }); toast.success('Status updated') },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['workspace', id] }); qc.invalidateQueries({ queryKey: ['projects'] }); toast.success('Status updated') },
     onError: (e: any) => toast.error(e?.message || 'Failed to update status'),
   })
 

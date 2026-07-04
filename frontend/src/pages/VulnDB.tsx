@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { BookOpenIcon, ArrowPathIcon } from '@heroicons/react/24/outline'
 import { standardizedApiClient } from '@/lib/standardized-api-client'
@@ -27,14 +27,20 @@ export default function VulnDBPage() {
   const isAdmin = user?.is_superuser || user?.is_staff
 
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [severity, setSeverity] = useState('')
   const [selectedEntry, setSelectedEntry] = useState<string | number | null>(null)
 
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300)
+    return () => clearTimeout(t)
+  }, [search])
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ['vulndb', { search, severity }],
+    queryKey: ['vulndb', { search: debouncedSearch, severity }],
     queryFn: () =>
       standardizedApiClient.getVulnDB({
-        search,
+        search: debouncedSearch,
         vulnerabilityseverity: severity || undefined,
       }),
   })
