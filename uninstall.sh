@@ -46,7 +46,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${SCRIPT_DIR}/.env"
 
 # ── Banner ────────────────────────────────────────────────────────────────────
-[[ -t 1 ]] && clear
+if [[ -t 1 ]]; then clear; fi
 printf "\n${BOLD}${RED}"
 cat <<'BANNER'
   ╔═══════════════════════════════════════════════════════╗
@@ -77,18 +77,18 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 0
 fi
 
-# Load .env
-set -a
-# shellcheck source=/dev/null
-. "$ENV_FILE" 2>/dev/null || true
-set +a
+# Read only the three values we need — grep is safe with any characters in values.
+# Never source .env: passwords can contain $, spaces, or ! that break bash.
+_env_val() { grep -m1 "^${1}=" "$ENV_FILE" 2>/dev/null | cut -d= -f2- | tr -d '[:space:]'; }
 
-USE_DOCKER="${USE_DOCKER:-True}"
+USE_DOCKER="$(_env_val USE_DOCKER)"
 DEPLOY_MODE="docker"
-[[ "${USE_DOCKER}" == "False" ]] && DEPLOY_MODE="baremetal"
+if [[ "$USE_DOCKER" == "False" ]]; then DEPLOY_MODE="baremetal"; fi
 
-DB_NAME="${POSTGRES_DB:-securityhub}"
-DB_USER="${POSTGRES_USER:-securityhub_user}"
+DB_NAME="$(_env_val POSTGRES_DB)"
+[[ -z "$DB_NAME" ]] && DB_NAME="securityhub"
+DB_USER="$(_env_val POSTGRES_USER)"
+[[ -z "$DB_USER" ]] && DB_USER="securityhub_user"
 
 # ── Summary of what will be removed ──────────────────────────────────────────
 printf "  ${BOLD}Deployment mode detected:${NC} ${DEPLOY_MODE}\n\n"

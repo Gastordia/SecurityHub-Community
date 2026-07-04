@@ -914,18 +914,18 @@ if [[ "$DEPLOY_MODE" == "docker" ]]; then
   [[ -z "$BACKEND_CONTAINER" ]] && die "Cannot find 'securityhub' container. Check: ${COMPOSE_CMD} ps"
 
   info "Running migrations..."
-  $DOCKER_CMD exec "$BACKEND_CONTAINER" python securityhub/manage.py migrate --run-syncdb
+  $DOCKER_CMD exec "$BACKEND_CONTAINER" python3 securityhub/manage.py migrate --run-syncdb
 
   info "Running first-time setup..."
   $DOCKER_CMD exec \
     -e SETUP_USERNAME="$ADMIN_USER" -e SETUP_EMAIL="$ADMIN_EMAIL" \
     -e SETUP_FULL_NAME="$ADMIN_FULL_NAME" -e SETUP_PASSWORD="$ADMIN_PASS" \
     "$BACKEND_CONTAINER" \
-    python securityhub/manage.py first_setup --skip-gtk-check \
+    python3 securityhub/manage.py first_setup --skip-gtk-check \
     || warn "first_setup returned non-zero (admin may already exist — this is safe)."
 
   info "Collecting static files..."
-  $DOCKER_CMD exec "$BACKEND_CONTAINER" python securityhub/manage.py collectstatic --noinput --quiet
+  $DOCKER_CMD exec "$BACKEND_CONTAINER" python3 securityhub/manage.py collectstatic --noinput --verbosity 0
 
 else
   # Activate venv; .env already sourced above
@@ -934,10 +934,10 @@ else
   cd "${SCRIPT_DIR}/securityhub"
 
   info "Running migrations..."
-  python manage.py migrate --run-syncdb
+  python3 manage.py migrate --run-syncdb
 
   info "Running first-time setup..."
-  python manage.py first_setup --skip-gtk-check \
+  python3 manage.py first_setup --skip-gtk-check \
     || warn "first_setup returned non-zero (admin may already exist — this is safe)."
 
   cd "$SCRIPT_DIR"
