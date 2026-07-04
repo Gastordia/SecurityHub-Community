@@ -447,13 +447,20 @@ ADMIN_PASS="$PASS_RESULT"
 
 ADMIN_FULL_NAME="${SETUP_FULL_NAME:-${ADMIN_USER}}"
 
+# ── Ports (Docker only) ───────────────────────────────────────────────────────
+if [[ "$DEPLOY_MODE" == "docker" ]]; then
+  printf "\n  ${BOLD}── Ports ────────────────────────────────────────────────────${NC}\n"
+  prompt_val "HTTP port  (redirects to HTTPS)" "${HTTP_PORT:-3000}";  HTTP_PORT="$REPLY_VAL"
+  prompt_val "HTTPS port" "${HTTPS_PORT:-8443}"; HTTPS_PORT="$REPLY_VAL"
+fi
+
 # ── Network — defaults to localhost; edit .env for production ─────────────────
 # Docker always uses HTTPS (nginx self-signed); bare-metal defaults to HTTP.
 DOMAIN="${DOMAIN:-localhost}"
 if [[ "$DEPLOY_MODE" == "docker" ]]; then
-  SCHEME="${SCHEME:-https}"; COOKIE_SECURE="True"
+  SCHEME="https"; COOKIE_SECURE="True"
 else
-  SCHEME="${SCHEME:-http}";  COOKIE_SECURE="False"
+  SCHEME="http";  COOKIE_SECURE="False"
 fi
 BASE_URL="${SCHEME}://${DOMAIN}"
 
@@ -564,21 +571,22 @@ if [[ "$DEPLOY_MODE" == "docker" ]]; then
   USE_DOCKER_VAL="True"
   INTERNAL_URL="https://nginx"
   WHITELIST_VAL='["https://nginx"]'
+  HTTP_PORT="${HTTP_PORT:-3000}"
+  HTTPS_PORT="${HTTPS_PORT:-8443}"
 else
   USE_DOCKER_VAL="False"
   INTERNAL_URL="http://127.0.0.1"
   WHITELIST_VAL='["http://127.0.0.1"]'
+  HTTP_PORT="80"
+  HTTPS_PORT="443"
 fi
 
 ALLOWED_HOST_VAL='["'"$DOMAIN"'","localhost","127.0.0.1"]'
 
 # Build CORS/CSRF origin list.
-# In Docker mode the browser hits nginx on the mapped port (3000→HTTP redirect,
-# 8443→HTTPS). Always include port-qualified localhost URLs so local/WSL installs
-# work without CORS errors, even when the user typed a bare hostname.
 if [[ "$DEPLOY_MODE" == "docker" ]]; then
-  CORS_ORIGINS="${BASE_URL},https://localhost:8443,http://localhost:3000"
-  # If the user's domain is not localhost, that's already in BASE_URL; nothing extra needed.
+  CORS_ORIGINS="https://localhost:${HTTPS_PORT},http://localhost:${HTTP_PORT}"
+  [[ "$DOMAIN" != "localhost" ]] && CORS_ORIGINS="${BASE_URL},${CORS_ORIGINS}"
 else
   CORS_ORIGINS="${BASE_URL}"
 fi
@@ -591,6 +599,8 @@ cat > "$ENV_FILE" <<EOF
 # ── Deployment mode ───────────────────────────────────────────────────────────
 USE_DOCKER=${USE_DOCKER_VAL}
 INTERNAL_BASE_URL=${INTERNAL_URL}
+HTTP_PORT=${HTTP_PORT:-3000}
+HTTPS_PORT=${HTTPS_PORT:-8443}
 
 # ── Django core ───────────────────────────────────────────────────────────────
 # For production: set ALLOWED_HOST, CORS_ALLOWED_ORIGINS, CSRF_TRUSTED_ORIGINS,
@@ -947,13 +957,13 @@ fi
 # ══════════════════════════════════════════════════════════════════════════════
 if [[ "$DEPLOY_MODE" == "docker" ]]; then
   info "Verifying app is reachable..."
-  _check_url="https://localhost:8443/api/config/ping/"
+  _check_url="https://localhost:${HTTPS_PORT}/api/config/ping/"
   _http_code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 10 "$_check_url" 2>/dev/null || true)"
   if [[ "$_http_code" == "200" ]]; then
     success "API responding at ${_check_url}"
   else
     warn "API health check returned HTTP ${_http_code:-no response} — the app may still be initializing."
-    warn "Test manually: curl -sk https://localhost:8443/api/config/ping/"
+    warn "Test manually: curl -sk https://localhost:${HTTPS_PORT}/api/config/ping/"
   fi
 fi
 
@@ -965,18 +975,16 @@ hr
 printf "\n  ${BOLD}${GREEN}✔  SecurityHub is ready!${NC}\n\n"
 
 if [[ "$DEPLOY_MODE" == "docker" ]]; then
-  # Nginx maps :80→host:3000 (redirects to HTTPS) and :443→host:8443.
-  # Always show the port-qualified HTTPS URL since that's what the browser needs.
   if [[ "$IS_WSL" == "true" ]]; then
     printf "  ${BOLD}Open in your Windows browser:${NC}\n"
-    printf "    ${CYAN}https://localhost:8443${NC}\n"
-    printf "    ${DIM}(port 3000 redirects here — accept the self-signed cert warning)${NC}\n"
+    printf "    ${CYAN}https://localhost:${HTTPS_PORT}${NC}\n"
+    printf "    ${DIM}(port ${HTTP_PORT} redirects here — accept the self-signed cert warning)${NC}\n"
   elif [[ "$DOMAIN" == "localhost" || "$DOMAIN" == "127.0.0.1" ]]; then
-    printf "  ${BOLD}URL:${NC}  ${CYAN}https://localhost:8443${NC}\n"
-    printf "        ${DIM}(port 3000 redirects to HTTPS — accept the self-signed cert warning)${NC}\n"
+    printf "  ${BOLD}URL:${NC}  ${CYAN}https://localhost:${HTTPS_PORT}${NC}\n"
+    printf "        ${DIM}(port ${HTTP_PORT} redirects to HTTPS — accept the self-signed cert warning)${NC}\n"
   else
     printf "  ${BOLD}URL:${NC}  ${CYAN}${BASE_URL}${NC}\n"
-    printf "        ${DIM}(make sure your DNS / reverse proxy points to this server's port 8443)${NC}\n"
+    printf "        ${DIM}(DNS / reverse proxy should point to port ${HTTPS_PORT} on this host)${NC}\n"
   fi
 else
   printf "  ${BOLD}URL:${NC}  ${CYAN}${BASE_URL}${NC}\n"
