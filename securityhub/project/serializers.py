@@ -335,7 +335,7 @@ class RetestSerializer(serializers.ModelSerializer):
             'id', 'vulnerability', 'tester', 'tester_name',
             'date', 'result', 'notes', 'evidence', 'created_at',
         ]
-        read_only_fields = ['id', 'created_at', 'tester']
+        read_only_fields = ['id', 'created_at', 'tester', 'vulnerability']
 
 
 @extend_schema_serializer()
@@ -365,7 +365,7 @@ class FindingCommentSerializer(serializers.ModelSerializer):
         model = FindingComment
         fields = ['id', 'vulnerability', 'author', 'author_email', 'body',
                   'is_internal', 'is_deleted', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'author', 'is_deleted', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'author', 'vulnerability', 'is_deleted', 'created_at', 'updated_at']
 
 
 @extend_schema_serializer()

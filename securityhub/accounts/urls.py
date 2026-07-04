@@ -13,5 +13,6 @@ urlpatterns = [
     # PROFILE & CURRENT USER
     path('profile/', views.myprofile, name='profile-operations'),
     path('me/', views.myprofile, name='current-user'),
+    path('change-password/', views.change_password, name='change-password'),
 
 ]

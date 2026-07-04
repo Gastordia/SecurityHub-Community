@@ -39,6 +39,11 @@ Security settings, Make sure that you change the configuration before deploying 
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ImproperlyConfigured(
+        "SECRET_KEY environment variable is not set. "
+        "Set it in your .env file or environment before starting the server."
+    )
 USE_DOCKER = os.getenv('USE_DOCKER')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
@@ -432,7 +437,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = os.getenv('USER_TIME_ZONE')
+TIME_ZONE = os.getenv('USER_TIME_ZONE', 'UTC')
 
 USE_I18N = True
 

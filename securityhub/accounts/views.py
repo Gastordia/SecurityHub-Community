@@ -13,7 +13,7 @@ from utils.audit_logging import AuditLogger
 from utils.logging_helpers import log_view_start, log_view_success, log_view_error
 from .throttles import LoginThrottle as AccountLoginThrottle
 from .models import CustomUser
-from .serializers import ProfileUserSerializer, CustomUserSerializer
+from .serializers import ChangePasswordSerializer, ProfileUserSerializer, CustomUserSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -205,5 +205,18 @@ def myprofile(request):
         log_view_error('myprofile', request, e)
         return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@throttle_classes([TenantAwareThrottle])
+def change_password(request):
+    serializer = ChangePasswordSerializer(
+        data=request.data, context={'request': request}
+    )
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    request.user.set_password(serializer.validated_data['newpassword'])
+    request.user.save(update_fields=['password'])
+    return Response({'detail': 'Password changed successfully.'})
 
 

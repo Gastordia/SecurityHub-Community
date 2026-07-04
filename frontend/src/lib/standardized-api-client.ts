@@ -106,6 +106,13 @@ export const standardizedApiClient = {
     const response = await apiClient.patch('/api/auth/profile/', data)
     return response.data
   },
+  async changePassword(oldPassword: string, newPassword: string) {
+    const response = await apiClient.post('/api/auth/change-password/', {
+      oldpassword: oldPassword,
+      newpassword: newPassword,
+    })
+    return response.data
+  },
 
   // ── Projects ─────────────────────────────────────────────────────────────
   async getProjects(params?: Record<string, any>) {

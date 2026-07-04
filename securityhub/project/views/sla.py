@@ -34,7 +34,13 @@ def sla_policy(request):
         serializer = SLAPolicySerializer(policy)
         return Response(serializer.data)
 
-    # PUT: create or update
+    # PUT: create or update — staff only
+    if not request.user.is_staff:
+        return Response(
+            {'detail': 'Only staff users can modify the SLA policy.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     if policy is None:
         serializer = SLAPolicySerializer(data=request.data)
         if not serializer.is_valid():

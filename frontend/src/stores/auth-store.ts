@@ -70,8 +70,19 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           // Handle the actual backend response format
           const { access, username, isAdmin, isStaff } = response
 
+          // Fetch full profile immediately so we always have the correct user id.
+          // Keep token in memory first so the profile request can authenticate.
+          let profileData: Record<string, any> = {}
+          try {
+            // The access_token cookie is set by the login response, so this works
+            // without explicitly setting the Authorization header first.
+            profileData = await standardizedApiClient.getCurrentUser()
+          } catch (profileError) {
+            safeWarn('Failed to fetch user profile after login:', profileError)
+          }
+
           const user: User = {
-            id: 1, // Will be fetched from profile
+            id: (profileData as any).id ?? 0,
             username: username,
             email: email,
             first_name: username,
@@ -82,6 +93,11 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             user_type: isStaff ? 'staff' : 'customer',
             last_login: new Date().toISOString(),
             date_joined: new Date().toISOString(),
+            ...profileData,
+            // Keep values from the login token (authoritative for permissions)
+            is_staff: isStaff,
+            is_superuser: isAdmin,
+            user_type: ((profileData as any).user_type as 'staff' | 'customer') || (isStaff ? 'staff' : 'customer'),
           }
 
           set({
@@ -91,21 +107,6 @@ export const useAuthStore = create<AuthState & AuthActions>()(
             isAuthenticated: true,
             isLoading: false,
           })
-
-          // Fetch full user profile to get accurate id, name, etc.
-          try {
-            const profileResponse = await standardizedApiClient.getCurrentUser()
-            const mergedUser = {
-              ...user,
-              ...profileResponse,
-              is_superuser: user.is_superuser,
-              is_staff: user.is_staff,
-              user_type: ((profileResponse as any).user_type as 'staff' | 'customer') || user.user_type,
-            }
-            set({ user: mergedUser })
-          } catch (profileError) {
-            safeWarn('Failed to fetch user profile:', profileError)
-          }
         } catch (error: any) {
           set({ isLoading: false })
           throw error

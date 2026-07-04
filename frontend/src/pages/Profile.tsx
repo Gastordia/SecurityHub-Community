@@ -16,6 +16,7 @@ export default function ProfilePage() {
     position: user?.position || '',
   })
   const [profileLoading, setProfileLoading] = useState(false)
+  const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
@@ -47,8 +48,9 @@ export default function ProfilePage() {
     setPasswordError('')
     setPasswordLoading(true)
     try {
-      await standardizedApiClient.updateProfile({ password: newPassword })
+      await standardizedApiClient.changePassword(oldPassword, newPassword)
       toast.success('Password changed')
+      setOldPassword('')
       setNewPassword('')
       setConfirmPassword('')
     } catch (err: any) {
@@ -112,6 +114,16 @@ export default function ProfilePage() {
           <p className="text-xs text-text-muted mt-0.5">Choose a strong password with at least 8 characters.</p>
         </div>
         <form onSubmit={savePassword} className="px-5 py-5 space-y-4">
+          <FormField label="Current Password">
+            <input
+              type="password"
+              value={oldPassword}
+              onChange={e => setOldPassword(e.target.value)}
+              required
+              placeholder="Your current password"
+              className="w-full rounded-lg bg-app-surface border border-border-default text-text-primary placeholder:text-text-muted px-3 py-2 text-sm outline-none transition-all focus:border-accent-500 focus:ring-1 focus:ring-accent-500/30"
+            />
+          </FormField>
           <FormField label="New Password">
             <input
               type="password"

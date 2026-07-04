@@ -108,6 +108,12 @@ def snapshot_now(request, project_id):
     from .models import DashboardSnapshot
     from .tasks import take_daily_snapshot
 
+    if not request.user.is_staff:
+        return Response(
+            {'detail': 'Only staff users can trigger snapshots.'},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
     project = get_scoped_project(request, project_id)
     if project is None:
         return Response({'detail': 'Project not found.'}, status=status.HTTP_404_NOT_FOUND)
