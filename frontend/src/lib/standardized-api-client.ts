@@ -229,10 +229,8 @@ export const standardizedApiClient = {
 
   // ── Vulnerability Library (read-only; populated via GitHub sync) ────────
   async getVulnDB(params?: Record<string, any>) {
-    const { search, page, page_size, ...rest } = params || {}
-    const limit = page_size || 20
-    const offset = page && page > 1 ? (page - 1) * limit : 0
-    const query: Record<string, any> = { ...rest, limit, offset }
+    const { search, ...rest } = params || {}
+    const query: Record<string, any> = { ...rest }
     if (search) query.vulnerabilityname = search
     const response = await apiClient.get('/api/vulndb/vulnerabilities/database/filter/', { params: query })
     return response.data

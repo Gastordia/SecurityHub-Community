@@ -4,6 +4,7 @@ import {
   ArrowPathIcon,
   TrashIcon,
   PlusIcon,
+  PencilIcon,
   CheckCircleIcon,
   XCircleIcon,
   BoltIcon,
@@ -13,7 +14,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
-import { PageSpinner, EmptyState } from '@/components/ui/Spinner'
+import { PageSpinner, EmptyState, ErrorState } from '@/components/ui/Spinner'
 import toast from 'react-hot-toast'
 
 type SettingsTab = 'webhooks' | 'sla' | 'project-types' | 'report-standards'
@@ -26,26 +27,28 @@ const WEBHOOK_EVENTS = [
 ]
 
 function WebhookForm({
+  initial,
   onSave,
   onCancel,
   loading,
 }: {
+  initial?: any
   onSave: (d: any) => void
   onCancel: () => void
   loading: boolean
 }) {
   const [form, setForm] = useState({
-    name: '',
-    url: '',
-    secret: '',
-    events: [] as string[],
-    is_active: true,
+    name: initial?.name ?? '',
+    url: initial?.url ?? '',
+    secret: initial?.secret ?? '',
+    events: initial?.events ?? [] as string[],
+    is_active: initial?.is_active ?? true,
   })
 
   const toggleEvent = (ev: string) =>
     setForm(f => ({
       ...f,
-      events: f.events.includes(ev) ? f.events.filter(e => e !== ev) : [...f.events, ev],
+      events: f.events.includes(ev) ? f.events.filter((e: string) => e !== ev) : [...f.events, ev],
     }))
 
   return (
@@ -103,7 +106,7 @@ function WebhookForm({
           loading={loading}
           disabled={!form.name.trim() || !form.url.trim()}
         >
-          Create Webhook
+          {initial ? 'Save Changes' : 'Create Webhook'}
         </Button>
       </div>
     </form>
@@ -128,7 +131,7 @@ function DeliveryRow({ delivery }: { delivery: any }) {
   )
 }
 
-function WebhookCard({ wh, onDelete }: { wh: any; onDelete: () => void }) {
+function WebhookCard({ wh, onDelete, onEdit }: { wh: any; onDelete: () => void; onEdit: () => void }) {
   const qc = useQueryClient()
   const [showDeliveries, setShowDeliveries] = useState(false)
 
@@ -205,6 +208,13 @@ function WebhookCard({ wh, onDelete }: { wh: any; onDelete: () => void }) {
             {wh.is_active ? 'Disable' : 'Enable'}
           </Button>
           <button
+            onClick={onEdit}
+            className="p-1.5 text-text-muted hover:text-accent-400 rounded transition-colors"
+            aria-label="Edit webhook"
+          >
+            <PencilIcon className="w-4 h-4" />
+          </button>
+          <button
             onClick={onDelete}
             className="p-1.5 text-text-muted hover:text-critical rounded transition-colors"
           >
@@ -241,8 +251,9 @@ function WebhooksTab({ isAdmin }: { isAdmin: boolean }) {
   const qc = useQueryClient()
   const [showCreate, setShowCreate] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
+  const [editTarget, setEditTarget] = useState<any>(null)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['webhooks'],
     queryFn: () => standardizedApiClient.getWebhookConfigs(),
   })
@@ -256,6 +267,16 @@ function WebhooksTab({ isAdmin }: { isAdmin: boolean }) {
       toast.success('Webhook created')
     },
     onError: (e: any) => toast.error(e?.message || 'Failed to create webhook'),
+  })
+
+  const update = useMutation({
+    mutationFn: (d: any) => standardizedApiClient.updateWebhookConfig(editTarget.id, d),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['webhooks'] })
+      setEditTarget(null)
+      toast.success('Webhook updated')
+    },
+    onError: (e: any) => toast.error(e?.message || 'Failed to update webhook'),
   })
 
   const del = useMutation({
@@ -285,6 +306,8 @@ function WebhooksTab({ isAdmin }: { isAdmin: boolean }) {
 
       {isLoading ? (
         <PageSpinner />
+      ) : isError ? (
+        <ErrorState />
       ) : webhooks.length === 0 ? (
         <EmptyState
           title="No webhooks configured"
@@ -304,7 +327,12 @@ function WebhooksTab({ isAdmin }: { isAdmin: boolean }) {
       ) : (
         <div className="space-y-3">
           {webhooks.map((wh: any) => (
-            <WebhookCard key={wh.id} wh={wh} onDelete={() => setDeleteTarget(wh)} />
+            <WebhookCard
+              key={wh.id}
+              wh={wh}
+              onEdit={() => setEditTarget(wh)}
+              onDelete={() => setDeleteTarget(wh)}
+            />
           ))}
         </div>
       )}
@@ -315,6 +343,17 @@ function WebhooksTab({ isAdmin }: { isAdmin: boolean }) {
           onCancel={() => setShowCreate(false)}
           loading={create.isPending}
         />
+      </Modal>
+
+      <Modal isOpen={!!editTarget} onClose={() => setEditTarget(null)} title="Edit Webhook" size="lg">
+        {editTarget && (
+          <WebhookForm
+            initial={editTarget}
+            onSave={d => update.mutate(d)}
+            onCancel={() => setEditTarget(null)}
+            loading={update.isPending}
+          />
+        )}
       </Modal>
 
       <ConfirmModal

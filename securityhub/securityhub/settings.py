@@ -265,8 +265,8 @@ REST_FRAMEWORK = {
         'admin': os.getenv('THROTTLE_RATE_ADMIN', '500/minute'),  # Admin/superuser operations
         'burst': os.getenv('THROTTLE_RATE_BURST', '100/minute'),  # Burst protection
     },
-    'DEFAULT_PAGINATION_CLASS': 'utils.pagination.StandardResultsSetPagination',
-    'PAGE_SIZE': PAGINATION_STANDARD_PAGE_SIZE,
+    'DEFAULT_PAGINATION_CLASS': 'utils.pagination.NoPagination',
+    'PAGE_SIZE': None,
     # OpenAPI schema
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }

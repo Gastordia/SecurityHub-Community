@@ -8,7 +8,7 @@ import {
   ExclamationCircleIcon,
 } from '@heroicons/react/24/outline'
 import { standardizedApiClient } from '@/lib/standardized-api-client'
-import { PageSpinner, EmptyState } from '@/components/ui/Spinner'
+import { PageSpinner, EmptyState, ErrorState } from '@/components/ui/Spinner'
 import { StatusBadge } from '@/components/ui/Badge'
 import { SeverityBar } from '@/components/ui/SeverityBar'
 import { TrendChart } from '@/components/ui/TrendChart'
@@ -98,14 +98,14 @@ function ProjectCard({ project }: { project: any }) {
 }
 
 export default function DashboardPage() {
-  const { data: stats, isLoading } = useQuery({
+  const { data: stats, isLoading, isError } = useQuery({
     queryKey: ['dashboard'],
     queryFn: () => standardizedApiClient.getDashboardSummary(),
   })
 
-  const { data: projectData, isLoading: projLoading } = useQuery({
+  const { data: projectData, isLoading: projLoading, isError: projError } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => standardizedApiClient.getProjects({ page_size: 6 }),
+    queryFn: () => standardizedApiClient.getProjects(),
   })
 
   const { data: slaBreached } = useQuery({
@@ -115,13 +115,10 @@ export default function DashboardPage() {
   })
 
   if (isLoading) return <PageSpinner />
+  if (isError) return <div className="p-6"><ErrorState /></div>
 
   const s = stats || {}
-  const projects = Array.isArray(projectData?.results)
-    ? projectData.results
-    : Array.isArray(projectData)
-    ? projectData
-    : []
+  const projects = Array.isArray(projectData) ? projectData : []
   const breachedList = Array.isArray(slaBreached) ? slaBreached : []
   const breachedCount = breachedList.length
 
@@ -209,6 +206,8 @@ export default function DashboardPage() {
           <div className="p-6">
             <PageSpinner />
           </div>
+        ) : projError ? (
+          <ErrorState />
         ) : projects.length === 0 ? (
           <EmptyState
             icon={BriefcaseIcon}

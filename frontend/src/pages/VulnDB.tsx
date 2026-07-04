@@ -5,7 +5,7 @@ import { standardizedApiClient } from '@/lib/standardized-api-client'
 import { useAuthStore } from '@/stores/auth-store'
 import { Button } from '@/components/ui/Button'
 import { SearchInput } from '@/components/ui/Input'
-import { PageSpinner, EmptyState } from '@/components/ui/Spinner'
+import { PageSpinner, EmptyState, ErrorState } from '@/components/ui/Spinner'
 import { SeverityBadge } from '@/components/ui/Badge'
 import { Modal } from '@/components/ui/Modal'
 import toast from 'react-hot-toast'
@@ -27,22 +27,19 @@ export default function VulnDBPage() {
   const isAdmin = user?.is_superuser || user?.is_staff
 
   const [search, setSearch] = useState('')
-  const [page, setPage] = useState(1)
   const [severity, setSeverity] = useState('')
   const [selectedEntry, setSelectedEntry] = useState<string | number | null>(null)
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['vulndb', { search, page, severity }],
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['vulndb', { search, severity }],
     queryFn: () =>
       standardizedApiClient.getVulnDB({
         search,
-        page,
-        page_size: 20,
         vulnerabilityseverity: severity || undefined,
       }),
   })
-  const entries = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
-  const total = data?.count ?? entries.length
+  const entries = Array.isArray(data) ? data : []
+  const total = entries.length
 
   const { data: entryData, isLoading: entryLoading } = useQuery({
     queryKey: ['vulndb-entry', selectedEntry],
@@ -61,7 +58,6 @@ export default function VulnDBPage() {
 
   const handleSearch = (val: string) => {
     setSearch(val)
-    setPage(1)
   }
 
   return (
@@ -97,7 +93,6 @@ export default function VulnDBPage() {
           value={severity}
           onChange={e => {
             setSeverity(e.target.value)
-            setPage(1)
           }}
           className="px-3 py-2 rounded-lg bg-app-surface border border-border-default text-sm text-text-primary focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500/30"
         >
@@ -112,6 +107,8 @@ export default function VulnDBPage() {
 
       {isLoading ? (
         <PageSpinner />
+      ) : isError ? (
+        <ErrorState />
       ) : entries.length === 0 ? (
         <EmptyState
           icon={BookOpenIcon}
@@ -187,27 +184,6 @@ export default function VulnDBPage() {
         </div>
       )}
 
-      {(data?.count ?? 0) > 20 && (
-        <div className="flex justify-center items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPage(p => p - 1)}
-            disabled={page === 1}
-          >
-            Previous
-          </Button>
-          <span className="text-sm text-text-muted">Page {page}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setPage(p => p + 1)}
-            disabled={entries.length < 20}
-          >
-            Next
-          </Button>
-        </div>
-      )}
 
       <Modal
         isOpen={selectedEntry !== null}

@@ -6,7 +6,7 @@ import { standardizedApiClient } from '@/lib/standardized-api-client'
 import { Button } from '@/components/ui/Button'
 import { Input, Select, SearchInput } from '@/components/ui/Input'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
-import { PageSpinner, EmptyState } from '@/components/ui/Spinner'
+import { PageSpinner, EmptyState, ErrorState } from '@/components/ui/Spinner'
 import { StatusBadge } from '@/components/ui/Badge'
 import { SeverityBar } from '@/components/ui/SeverityBar'
 import toast from 'react-hot-toast'
@@ -179,15 +179,11 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['projects'],
-    queryFn: () => standardizedApiClient.getProjects({ page_size: 100 }),
+    queryFn: () => standardizedApiClient.getProjects(),
   })
-  const allProjects: any[] = Array.isArray(data?.results)
-    ? data.results
-    : Array.isArray(data)
-    ? data
-    : []
+  const allProjects: any[] = Array.isArray(data) ? data : []
 
   const projects = useMemo(() => {
     let list = allProjects
@@ -276,6 +272,8 @@ export default function ProjectsPage() {
 
       {isLoading ? (
         <PageSpinner />
+      ) : isError ? (
+        <ErrorState />
       ) : allProjects.length === 0 ? (
         <EmptyState
           icon={FolderOpenIcon}

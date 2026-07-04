@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/Button'
 import { Input, Textarea, Select, SearchInput } from '@/components/ui/Input'
 import { Modal, ConfirmModal } from '@/components/ui/Modal'
 import { Drawer } from '@/components/ui/Drawer'
-import { PageSpinner, EmptyState, InlineSpinner } from '@/components/ui/Spinner'
+import { PageSpinner, EmptyState, ErrorState, InlineSpinner } from '@/components/ui/Spinner'
 import { SeverityBadge, StatusBadge, severityColor } from '@/components/ui/Badge'
 import { SeverityBar } from '@/components/ui/SeverityBar'
 import { SLABadge } from '@/components/ui/SLABadge'
@@ -743,9 +743,9 @@ function FindingsTab({ projectId }: { projectId: string }) {
   const [bulkNewSev, setBulkNewSev] = useState(SEVERITIES[0])
   const [bulkDeleteModal, setBulkDeleteModal] = useState(false)
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['vulns', projectId],
-    queryFn: () => standardizedApiClient.getProjectVulnerabilities(projectId, { page_size: 500 }),
+    queryFn: () => standardizedApiClient.getProjectVulnerabilities(projectId),
   })
   const vulns = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
 
@@ -866,6 +866,8 @@ function FindingsTab({ projectId }: { projectId: string }) {
 
       {isLoading ? (
         <PageSpinner />
+      ) : isError ? (
+        <ErrorState />
       ) : vulns.length === 0 ? (
         <EmptyState icon={ShieldExclamationIcon} title="No findings yet" description="Add manually or import a scan file from the Scanner tab." />
       ) : filtered.length === 0 ? (
@@ -1032,13 +1034,14 @@ function VulnRetestCard({ vuln }: { vuln: any }) {
 }
 
 function RetestsTab({ projectId }: { projectId: string }) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['vulns', projectId],
-    queryFn: () => standardizedApiClient.getProjectVulnerabilities(projectId, { page_size: 500 }),
+    queryFn: () => standardizedApiClient.getProjectVulnerabilities(projectId),
   })
   const vulns = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : []
 
   if (isLoading) return <PageSpinner />
+  if (isError) return <ErrorState />
   if (vulns.length === 0) return <EmptyState icon={ClockIcon} title="No findings to retest" description="Add findings first, then record retests from within each finding." />
 
   return (
@@ -1635,7 +1638,7 @@ export default function WorkspacePage() {
   const qc = useQueryClient()
   const [tab, setTab] = useState<Tab>('findings')
 
-  const { data: project, isLoading } = useQuery({
+  const { data: project, isLoading, isError } = useQuery({
     queryKey: ['workspace', id],
     queryFn: () => standardizedApiClient.getProject(id!),
     enabled: !!id,
@@ -1653,6 +1656,7 @@ export default function WorkspacePage() {
   }
 
   if (isLoading) return <PageSpinner />
+  if (isError) return <div className="p-6"><ErrorState message="Could not load project. Check your connection or verify the project exists." /></div>
 
   if (!project) {
     return <SetupWorkspace onCreated={(newId) => navigate(`/workspace/${newId}`, { replace: true })} />

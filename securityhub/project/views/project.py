@@ -206,38 +206,19 @@ class GetAllProjects(TenantScopedAPIView):
         start_ctx = log_view_start('GetAllProjects.get', request)
         
         try:
-            from utils.pagination import StandardResultsSetPagination
             projects = self.scoped(Project.objects.prefetch_related('owner').order_by('-id'))
             projects = self.get_user_queryset(projects)
-
-            paginator = StandardResultsSetPagination()
-            page = paginator.paginate_queryset(projects, request)
-            if page is not None:
-                serializer = ProjectSerializer(page, many=True)
-                org_id = None
-                AuditLogger.log_data_access(
-                    user=request.user,
-                    resource_type='Project',
-                    action='LIST',
-                    org_id=org_id,
-                    request=request,
-                    details={'count': paginator.page.paginator.count}
-                )
-                log_view_success('GetAllProjects.get', request, {'count': paginator.page.paginator.count}, start_ctx['start_time'])
-                return paginator.get_paginated_response(serializer.data)
-
             serializer = ProjectSerializer(projects, many=True)
-            org_id = None
             AuditLogger.log_data_access(
                 user=request.user,
                 resource_type='Project',
                 action='LIST',
-                org_id=org_id,
+                org_id=None,
                 request=request,
                 details={'count': len(serializer.data)}
             )
             log_view_success('GetAllProjects.get', request, {'count': len(serializer.data)}, start_ctx['start_time'])
-            return Response({'count': len(serializer.data), 'next': None, 'previous': None, 'results': serializer.data})
+            return Response(serializer.data)
             
         except Exception as e:
             log_view_error('GetAllProjects.get', request, e)
