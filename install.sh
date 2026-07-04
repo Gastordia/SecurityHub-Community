@@ -392,7 +392,7 @@ fi
 
 # ── Quick vs Custom setup ─────────────────────────────────────────────────────
 printf "\n"
-printf "  ${BOLD}1) Quick setup${NC}   ${DIM}— just credentials + domain, everything else is auto-configured${NC}\n"
+printf "  ${BOLD}1) Quick setup${NC}   ${DIM}— just credentials, everything else is auto-configured${NC}\n"
 printf "  ${BOLD}2) Custom setup${NC}  ${DIM}— step through all options (database names, Redis, SMTP, etc.)${NC}\n"
 printf "\n"
 
@@ -447,16 +447,13 @@ ADMIN_PASS="$PASS_RESULT"
 
 ADMIN_FULL_NAME="${SETUP_FULL_NAME:-${ADMIN_USER}}"
 
-# ── Network (always asked) ────────────────────────────────────────────────────
-printf "\n  ${BOLD}── Network ──────────────────────────────────────────────────${NC}\n"
-
-prompt_val "Domain or public IP" "${DOMAIN:-yourdomain.com}"; DOMAIN="$REPLY_VAL"
-
-if prompt_yn "Is HTTPS already configured for this domain?" "y"; then
-  SCHEME="https"; COOKIE_SECURE="True"
+# ── Network — defaults to localhost; edit .env for production ─────────────────
+# Docker always uses HTTPS (nginx self-signed); bare-metal defaults to HTTP.
+DOMAIN="${DOMAIN:-localhost}"
+if [[ "$DEPLOY_MODE" == "docker" ]]; then
+  SCHEME="${SCHEME:-https}"; COOKIE_SECURE="True"
 else
-  SCHEME="http"; COOKIE_SECURE="False"
-  warn "Running without HTTPS. Set AUTH_COOKIE_SECURE=True once you add TLS."
+  SCHEME="${SCHEME:-http}";  COOKIE_SECURE="False"
 fi
 BASE_URL="${SCHEME}://${DOMAIN}"
 
@@ -596,6 +593,8 @@ USE_DOCKER=${USE_DOCKER_VAL}
 INTERNAL_BASE_URL=${INTERNAL_URL}
 
 # ── Django core ───────────────────────────────────────────────────────────────
+# For production: set ALLOWED_HOST, CORS_ALLOWED_ORIGINS, CSRF_TRUSTED_ORIGINS,
+# and FRONTEND_URL to your actual domain, then re-run: bash install.sh
 SECRET_KEY=${GENERATED_KEY}
 DEBUG=False
 ALLOWED_HOST=${ALLOWED_HOST_VAL}
