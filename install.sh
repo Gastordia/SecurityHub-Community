@@ -13,8 +13,8 @@ set -euo pipefail
 
 # ── Terminal colours ──────────────────────────────────────────────────────────
 if [[ -t 1 ]]; then
-  BOLD='\033[1m'; DIM='\033[2m'; RED='\033[0;31m'; GREEN='\033[0;32m'
-  YELLOW='\033[0;33m'; CYAN='\033[0;36m'; NC='\033[0m'
+  BOLD=$'\033[1m'; DIM=$'\033[2m'; RED=$'\033[0;31m'; GREEN=$'\033[0;32m'
+  YELLOW=$'\033[0;33m'; CYAN=$'\033[0;36m'; NC=$'\033[0m'
 else
   BOLD=''; DIM=''; RED=''; GREEN=''; YELLOW=''; CYAN=''; NC=''
 fi
@@ -705,12 +705,35 @@ if [[ "$DEPLOY_MODE" == "docker" ]]; then
   # ── Docker path ───────────────────────────────────────────────────────────
   export DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1
 
+  # Check that the required ports are free before attempting to start
+  _port_in_use() { ss -tlnp 2>/dev/null | grep -q ":${1} " || \
+                   nc -z 127.0.0.1 "$1" 2>/dev/null; }
+  PORT_ERR=false
+  for _p in "$HTTP_PORT" "$HTTPS_PORT"; do
+    if _port_in_use "$_p"; then
+      error "Port ${_p} is already in use on this host."
+      PORT_ERR=true
+    fi
+  done
+  if [[ "$PORT_ERR" == "true" ]]; then
+    printf "\n  ${BOLD}Free the port(s) above, or choose different ones:${NC}\n"
+    printf "    ${DIM}sudo ss -tlnp | grep -E ':%s|:%s'${NC}\n" "$HTTP_PORT" "$HTTPS_PORT"
+    printf "  Then re-run: ${BOLD}bash install.sh${NC}\n\n"
+    die "Port conflict — cannot start containers."
+  fi
+
   info "Pulling base images..."
   $COMPOSE_CMD pull --quiet 2>/dev/null || true
   info "Building application images..."
   $COMPOSE_CMD build --quiet
   info "Starting services..."
-  $COMPOSE_CMD up -d
+  if ! $COMPOSE_CMD up -d 2>&1; then
+    # Catch port-binding errors that slip past the pre-check (race condition)
+    printf "\n  ${BOLD}Tip:${NC} if the error above mentions 'port is already allocated',\n"
+    printf "  another process is using port ${HTTP_PORT} or ${HTTPS_PORT}.\n"
+    printf "  Stop it, then re-run: ${BOLD}bash install.sh${NC}\n\n"
+    die "docker compose up failed."
+  fi
 
   info "Waiting for backend to become healthy (up to 3 min)..."
   WAIT=0; MAX=180; BACKEND_HEALTHY=false
