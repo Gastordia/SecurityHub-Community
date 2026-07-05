@@ -452,7 +452,6 @@ class NexposeParser(BaseParser):
             + "\n\n"
             + self.clean_html_text(vuln.get("pluginOutput", "").strip()),
             solution=self.clean_html_text(vuln.get("resolution")) if vuln.get("resolution") else None,
-            evidence=vuln.get("vector") or None,
             references=references,
             cwe_ids=cwe_ids,
             cvss_vector=vuln.get("vector"),

@@ -94,7 +94,7 @@ class QualysParser(BaseParser):
             if not title:
                 return None
             
-            description = self._get_text(vuln, ["DESCRIPTION", "DETAILS", "SUMMARY"])
+            description = self.clean_html_text(self._get_text(vuln, ["DESCRIPTION", "DETAILS", "SUMMARY"]))
             severity = self._get_text(vuln, ["SEVERITY", "RISK", "LEVEL", "THREAT"])
             
             # Get CVSS information
@@ -105,7 +105,7 @@ class QualysParser(BaseParser):
             affected_asset = self._get_affected_asset(vuln)
             
             # Get solution/remediation
-            solution = self._get_text(vuln, ["SOLUTION", "REMEDIATION", "FIX"])
+            solution = self.clean_html_text(self._get_text(vuln, ["SOLUTION", "REMEDIATION", "FIX"]))
             
             # Get references
             references = self._get_references(vuln)
