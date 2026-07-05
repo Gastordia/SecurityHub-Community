@@ -83,6 +83,104 @@ import secrets, string
 a='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#\$%'
 print(''.join(secrets.choice(a) for _ in range(20)))" 2>/dev/null || \
                  openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c20; }
+sh_quote()     { printf '%q' "$1"; }
+timestamp_now() { date '+%Y%m%d-%H%M%S'; }
+port_in_use()  { ss -tln 2>/dev/null | grep -q "[.:]$1 " || nc -z 127.0.0.1 "$1" 2>/dev/null; }
+
+show_env_issue() {
+  local issue_text="$1"
+  warn "Existing .env cannot be used as defaults."
+  printf "  ${BOLD}What is wrong:${NC}\n"
+  while IFS= read -r _line; do
+    [[ -n "$_line" ]] && printf "    %s\n" "$_line"
+  done <<< "$issue_text"
+}
+
+handle_bad_env() {
+  local env_path="$1" issue_text="$2"
+  local backup_path="${env_path}.$(timestamp_now).bak"
+
+  show_env_issue "$issue_text"
+  if [[ "$NON_INTERACTIVE" == "true" ]]; then
+    die "Non-interactive mode requires a valid .env file. Fix ${env_path} and re-run."
+  fi
+
+  printf "\n"
+  if prompt_yn "Rename the bad .env to $(basename "$backup_path") and create a fresh one?" "y"; then
+    mv "$env_path" "$backup_path"
+    success "Renamed .env to $(basename "$backup_path"). A new .env will be created."
+  else
+    warn "Keeping the existing .env in place, but it will not be used as defaults."
+    warn "The installer will continue and overwrite .env at step 4 if you finish setup."
+  fi
+  return 1
+}
+
+load_env_defaults() {
+  local env_path="$1"
+  [[ -f "$env_path" ]] || return 0
+
+  local syntax_err=""
+  if ! syntax_err="$(bash -n "$env_path" 2>&1)"; then
+    handle_bad_env "$env_path" "$syntax_err"
+    return 1
+  fi
+
+  warn "Existing .env found — loading as defaults."
+  local runtime_err_file
+  runtime_err_file="$(mktemp)"
+  if (
+    set -a
+    set +u
+    # shellcheck disable=SC1090
+    . "$env_path"
+  ) >/dev/null 2>"$runtime_err_file"; then
+    local saved_nounset_state=0
+    shopt -qo nounset && saved_nounset_state=1 || true
+    set +u
+    set -a
+    # shellcheck disable=SC1090
+    . "$env_path"
+    set +a
+    [[ "$saved_nounset_state" -eq 1 ]] && set -u || true
+    rm -f "$runtime_err_file"
+    return 0
+  fi
+
+  local runtime_err
+  runtime_err="$(<"$runtime_err_file")"
+  rm -f "$runtime_err_file"
+  handle_bad_env "$env_path" "$runtime_err"
+  return 1
+}
+
+prompt_docker_port() {
+  local label="$1" default="$2" other_port="${3:-}"
+  while true; do
+    prompt_val "$label" "$default"
+    local candidate="$REPLY_VAL"
+
+    if [[ ! "$candidate" =~ ^[0-9]+$ ]] || (( candidate < 1 || candidate > 65535 )); then
+      warn "Enter a valid TCP port between 1 and 65535."
+      continue
+    fi
+    if [[ -n "$other_port" && "$candidate" == "$other_port" ]]; then
+      warn "HTTP and HTTPS ports must be different."
+      continue
+    fi
+    if port_in_use "$candidate"; then
+      warn "Port ${candidate} is already in use on this host."
+      printf "    ${DIM}sudo ss -tlnp | grep -E ':%s'${NC}\n" "$candidate"
+      if [[ "$NON_INTERACTIVE" == "true" ]]; then
+        die "Port ${candidate} is already in use. Fix the conflict or update .env and re-run."
+      fi
+      continue
+    fi
+
+    REPLY_VAL="$candidate"
+    return 0
+  done
+}
 
 # ── Banner ────────────────────────────────────────────────────────────────────
 [[ -t 1 ]] && clear
@@ -386,8 +484,7 @@ hr
 
 # Load existing .env as defaults if it exists
 if [[ -f "$ENV_FILE" ]]; then
-  warn "Existing .env found — loading as defaults."
-  set -a; . "$ENV_FILE" 2>/dev/null || true; set +a
+  load_env_defaults "$ENV_FILE" || true
 fi
 
 # ── Quick vs Custom setup ─────────────────────────────────────────────────────
@@ -450,8 +547,8 @@ ADMIN_FULL_NAME="${SETUP_FULL_NAME:-${ADMIN_USER}}"
 # ── Ports (Docker only) ───────────────────────────────────────────────────────
 if [[ "$DEPLOY_MODE" == "docker" ]]; then
   printf "\n  ${BOLD}── Ports ────────────────────────────────────────────────────${NC}\n"
-  prompt_val "HTTP port  (redirects to HTTPS)" "${HTTP_PORT:-3000}";  HTTP_PORT="$REPLY_VAL"
-  prompt_val "HTTPS port" "${HTTPS_PORT:-8443}"; HTTPS_PORT="$REPLY_VAL"
+  prompt_docker_port "HTTP port  (redirects to HTTPS)" "${HTTP_PORT:-3000}";  HTTP_PORT="$REPLY_VAL"
+  prompt_docker_port "HTTPS port" "${HTTPS_PORT:-8443}" "$HTTP_PORT"; HTTPS_PORT="$REPLY_VAL"
 fi
 
 # ── Network — defaults to localhost; edit .env for production ─────────────────
@@ -591,6 +688,27 @@ else
   CORS_ORIGINS="${BASE_URL}"
 fi
 
+Q_INTERNAL_URL="$(sh_quote "$INTERNAL_URL")"
+Q_GENERATED_KEY="$(sh_quote "$GENERATED_KEY")"
+Q_CORS_ORIGINS="$(sh_quote "$CORS_ORIGINS")"
+Q_BASE_URL="$(sh_quote "$BASE_URL")"
+Q_TZ_VAL="$(sh_quote "$TZ_VAL")"
+Q_DB_USER="$(sh_quote "$DB_USER")"
+Q_DB_PASS="$(sh_quote "$DB_PASS")"
+Q_DB_NAME="$(sh_quote "$DB_NAME")"
+Q_DB_HOST="$(sh_quote "$DB_HOST")"
+Q_REDIS_PASS_VAL="$(sh_quote "$REDIS_PASS_VAL")"
+Q_REDIS_URL_VAL="$(sh_quote "$REDIS_URL_VAL")"
+Q_EMAIL_HOST_VAL="$(sh_quote "$EMAIL_HOST_VAL")"
+Q_EMAIL_USER_VAL="$(sh_quote "$EMAIL_USER_VAL")"
+Q_EMAIL_PASS_VAL="$(sh_quote "$EMAIL_PASS_VAL")"
+Q_SITE_NAME_VAL="$(sh_quote "$SITE_NAME_VAL")"
+Q_ADMIN_USER="$(sh_quote "$ADMIN_USER")"
+Q_ADMIN_EMAIL="$(sh_quote "$ADMIN_EMAIL")"
+Q_ADMIN_FULL_NAME="$(sh_quote "$ADMIN_FULL_NAME")"
+Q_ADMIN_PASS="$(sh_quote "$ADMIN_PASS")"
+Q_SETUP_POSITION="$(sh_quote "Security Engineer")"
+
 cat > "$ENV_FILE" <<EOF
 # SecurityHub Community Edition — generated by install.sh on $(date -u '+%Y-%m-%dT%H:%M:%SZ')
 # DO NOT commit this file — it contains secrets.
@@ -598,32 +716,32 @@ cat > "$ENV_FILE" <<EOF
 
 # ── Deployment mode ───────────────────────────────────────────────────────────
 USE_DOCKER=${USE_DOCKER_VAL}
-INTERNAL_BASE_URL=${INTERNAL_URL}
+INTERNAL_BASE_URL=${Q_INTERNAL_URL}
 HTTP_PORT=${HTTP_PORT:-3000}
 HTTPS_PORT=${HTTPS_PORT:-8443}
 
 # ── Django core ───────────────────────────────────────────────────────────────
 # For production: set ALLOWED_HOST, CORS_ALLOWED_ORIGINS, CSRF_TRUSTED_ORIGINS,
 # and FRONTEND_URL to your actual domain, then re-run: bash install.sh
-SECRET_KEY=${GENERATED_KEY}
+SECRET_KEY=${Q_GENERATED_KEY}
 DEBUG=False
 ALLOWED_HOST=${ALLOWED_HOST_VAL}
-CORS_ALLOWED_ORIGINS=${CORS_ORIGINS}
-CSRF_TRUSTED_ORIGINS=${CORS_ORIGINS}
+CORS_ALLOWED_ORIGINS=${Q_CORS_ORIGINS}
+CSRF_TRUSTED_ORIGINS=${Q_CORS_ORIGINS}
 WHITELIST_IP=${WHITELIST_VAL}
-FRONTEND_URL=${BASE_URL}
-USER_TIME_ZONE=${TZ_VAL}
+FRONTEND_URL=${Q_BASE_URL}
+USER_TIME_ZONE=${Q_TZ_VAL}
 
 # ── Database ──────────────────────────────────────────────────────────────────
-POSTGRES_USER=${DB_USER}
-POSTGRES_PASSWORD=${DB_PASS}
-POSTGRES_DB=${DB_NAME}
-POSTGRES_HOST=${DB_HOST}
+POSTGRES_USER=${Q_DB_USER}
+POSTGRES_PASSWORD=${Q_DB_PASS}
+POSTGRES_DB=${Q_DB_NAME}
+POSTGRES_HOST=${Q_DB_HOST}
 POSTGRES_PORT=5432
 
 # ── Cache ──────────────────────────────────────────────────────────────────────
-REDIS_PASSWORD=${REDIS_PASS_VAL}
-REDIS_URL=${REDIS_URL_VAL}
+REDIS_PASSWORD=${Q_REDIS_PASS_VAL}
+REDIS_URL=${Q_REDIS_URL_VAL}
 CACHE_TIMEOUT_SECONDS=900
 
 # ── Storage ────────────────────────────────────────────────────────────────────
@@ -643,30 +761,30 @@ PASSWORD_MIN_LENGTH=10
 
 # ── Email ──────────────────────────────────────────────────────────────────────
 USE_EMAIL=${USE_EMAIL_VAL}
-EMAIL_HOST=${EMAIL_HOST_VAL}
+EMAIL_HOST=${Q_EMAIL_HOST_VAL}
 EMAIL_PORT=${EMAIL_PORT_VAL}
 EMAIL_USE_TLS=${EMAIL_TLS_VAL}
-EMAIL_HOST_USER=${EMAIL_USER_VAL}
-EMAIL_HOST_PASSWORD=${EMAIL_PASS_VAL}
+EMAIL_HOST_USER=${Q_EMAIL_USER_VAL}
+EMAIL_HOST_PASSWORD=${Q_EMAIL_PASS_VAL}
 DEFAULT_FROM_EMAIL=
 
 # ── VulnDB / reference data sync ──────────────────────────────────────────────
-VULNDB_GITHUB_URL=
-PROJECT_TYPES_GITHUB_URL=
-REPORT_STANDARDS_GITHUB_URL=
+VULNDB_GITHUB_URL=https://raw.githubusercontent.com/Gastordia/SecurityHub-VulnDB/master/vulnerabilities.json
+PROJECT_TYPES_GITHUB_URL=https://raw.githubusercontent.com/Gastordia/SecurityHub-Config/master/project-types.json
+REPORT_STANDARDS_GITHUB_URL=https://raw.githubusercontent.com/Gastordia/SecurityHub-Config/master/report-standards.json
 CWE_DATA_GITHUB_URL=https://raw.githubusercontent.com/APTRS/APTRS-CWE/main/cwe.json
 
 # ── Branding ───────────────────────────────────────────────────────────────────
-SITE_NAME=${SITE_NAME_VAL}
+SITE_NAME=${Q_SITE_NAME_VAL}
 SITE_SUPPORT_EMAIL=support@securityhub.community
 
 # ── Admin account (first-time setup) ──────────────────────────────────────────
-SETUP_USERNAME=${ADMIN_USER}
-SETUP_EMAIL=${ADMIN_EMAIL}
-SETUP_FULL_NAME=${ADMIN_FULL_NAME}
-SETUP_POSITION=Security Engineer
-SETUP_COMPANY_NAME=${SITE_NAME_VAL}
-SETUP_PASSWORD=${ADMIN_PASS}
+SETUP_USERNAME=${Q_ADMIN_USER}
+SETUP_EMAIL=${Q_ADMIN_EMAIL}
+SETUP_FULL_NAME=${Q_ADMIN_FULL_NAME}
+SETUP_POSITION=${Q_SETUP_POSITION}
+SETUP_COMPANY_NAME=${Q_SITE_NAME_VAL}
+SETUP_PASSWORD=${Q_ADMIN_PASS}
 
 # ── Advanced tuning ────────────────────────────────────────────────────────────
 MAX_UPLOAD_MB_IMAGE=10
@@ -728,6 +846,18 @@ if [[ "$DEPLOY_MODE" == "docker" ]]; then
   $COMPOSE_CMD build --quiet
   info "Starting services..."
   if ! $COMPOSE_CMD up -d 2>&1; then
+    _backend_logs="$($COMPOSE_CMD logs --tail=80 securityhub 2>/dev/null || true)"
+    if printf '%s' "$_backend_logs" | grep -qi "password authentication failed for user"; then
+      printf "\n  ${BOLD}Detected database credential mismatch.${NC}\n"
+      printf "  The existing PostgreSQL Docker volume was likely created with an older password,\n"
+      printf "  but the current ${BOLD}.env${NC} now contains a different ${BOLD}POSTGRES_PASSWORD${NC}.\n\n"
+      printf "  ${BOLD}If you do not need the old database data:${NC}\n"
+      printf "    ${DIM}${COMPOSE_CMD} down -v${NC}\n"
+      printf "    ${DIM}bash install.sh${NC}\n\n"
+      printf "  ${BOLD}If you need to keep the old data:${NC}\n"
+      printf "    restore the previous PostgreSQL password in ${BOLD}.env${NC}\n"
+      printf "    or change the password inside the existing PostgreSQL container/volume.\n\n"
+    fi
     # Catch port-binding errors that slip past the pre-check (race condition)
     printf "\n  ${BOLD}Tip:${NC} if the error above mentions 'port is already allocated',\n"
     printf "  another process is using port ${HTTP_PORT} or ${HTTPS_PORT}.\n"
@@ -745,8 +875,17 @@ if [[ "$DEPLOY_MODE" == "docker" ]]; then
       if [[ "$STATUS" == "healthy" ]]; then
         BACKEND_HEALTHY=true; break
       elif [[ "$STATUS" == "unhealthy" ]]; then
+        _backend_logs="$($COMPOSE_CMD logs --tail=80 securityhub 2>/dev/null || true)"
         printf "                              \r"
         error "Backend container is unhealthy."
+        if printf '%s' "$_backend_logs" | grep -qi "password authentication failed for user"; then
+          printf "\n  ${BOLD}Detected database credential mismatch.${NC}\n"
+          printf "  The PostgreSQL volume appears to contain older credentials than the current ${BOLD}.env${NC}.\n\n"
+          printf "  ${BOLD}Reset the Docker database volume if the old data is disposable:${NC}\n"
+          printf "    ${DIM}${COMPOSE_CMD} down -v${NC}\n"
+          printf "    ${DIM}bash install.sh${NC}\n\n"
+          printf "  ${BOLD}Otherwise:${NC} restore the old PostgreSQL password in ${BOLD}.env${NC} first.\n\n"
+        fi
         printf "\n  ${BOLD}Diagnose with:${NC}\n"
         printf "    ${DIM}${COMPOSE_CMD} logs securityhub${NC}\n\n"
         die "Startup failed."
