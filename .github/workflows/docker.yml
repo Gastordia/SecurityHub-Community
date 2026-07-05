@@ -38,7 +38,11 @@ jobs:
           push: false
           tags: securityhub-api:test
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # mode=max caches every intermediate layer and is the well-documented
+          # trigger for buildx's GHA-cache-exporter "error writing layer blob:
+          # not_found" flake. mode=min (final-stage layers only) is the standard
+          # mitigation - slightly less cache reuse, much less flaky.
+          cache-to: type=gha,mode=min
 
       - name: Build Frontend image
         uses: docker/build-push-action@v5
@@ -48,7 +52,11 @@ jobs:
           push: false
           tags: securityhub-frontend:test
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # mode=max caches every intermediate layer and is the well-documented
+          # trigger for buildx's GHA-cache-exporter "error writing layer blob:
+          # not_found" flake. mode=min (final-stage layers only) is the standard
+          # mitigation - slightly less cache reuse, much less flaky.
+          cache-to: type=gha,mode=min
 
   docker-compose-test:
     name: Docker Compose Integration Test
