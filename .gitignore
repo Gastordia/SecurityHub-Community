@@ -156,6 +156,7 @@ pnpm-lock.yaml
 !CODE_OF_CONDUCT.md
 !docs/INSTALLATION.md
 !docs/writing-a-parser.md
+!docs/ARCHITECTURE.md
 
 # Analysis, summary, and report markdown files
 *_ANALYSIS*.md

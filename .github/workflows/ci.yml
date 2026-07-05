@@ -99,9 +99,18 @@ jobs:
           poetry run python securityhub/manage.py makemigrations --noinput
           poetry run python securityhub/manage.py migrate --noinput
 
-      - name: Run tests
+      - name: Run tests (Django test runner)
         run: |
           poetry run python securityhub/manage.py test --noinput
+
+      - name: Run tests (pytest)
+        # A chunk of the suite (parser conformance, format-regression tests) is
+        # written as plain pytest functions/fixtures, which manage.py test's
+        # unittest-based loader silently reports as "0 tests" rather than
+        # running - this step is required for those to actually execute in CI.
+        run: |
+          cd securityhub
+          poetry run pytest
 
   frontend-tests:
     name: Frontend Tests
