@@ -1,62 +1,46 @@
 [![CI](https://github.com/Gastordia/SecurityHub-Community/actions/workflows/ci.yml/badge.svg)](https://github.com/Gastordia/SecurityHub-Community/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
-[![Python](https://img.shields.io/badge/Python-3.11%2B-blue)](pyproject.toml)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](pyproject.toml)
 [![React](https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-61DAFB)](frontend)
 
 # SecurityHub Community Edition
 
-Self-hosted vulnerability management and reporting platform for security teams.
+SecurityHub is a self-hosted vulnerability management and reporting platform for small security teams, consultants, and internal AppSec groups.
 
----
+It gives you one place to:
+- import scanner output
+- track findings through triage and remediation
+- manage projects and retests
+- generate PDF and DOCX reports on infrastructure you control
 
-## What it does
+This repository includes the backend API, the frontend, Docker deployment files, parser implementations, and the reporting engine.
 
-SecurityHub gives security teams a single place to import scanner findings, track them through remediation, and generate client-ready reports — on infrastructure they control.
+## Who this is for
 
-## Contents
+SecurityHub is a practical fit if you want:
+- a self-hosted alternative to keeping findings in spreadsheets and slide decks
+- a place to normalize output from several scanners
+- customizable reporting without sending client data to a third-party SaaS
 
-- [Features](#features)
-- [Architecture at a glance](#architecture-at-a-glance)
-- [Quick start](#quick-start)
-- [Uninstalling](#uninstalling)
-- [Development setup](#development-setup)
-- [Documentation](#documentation)
-- [Security](#security)
-- [Contributing](#contributing)
-- [License](#license)
+It is probably not the right fit if you want:
+- a hosted service
+- a minimal single-binary install
+- a polished scanner orchestration platform with agent deployment
 
----
+## What works today
 
-## Features
+Core capabilities in this repo:
+- multi-project vulnerability tracking with status history and retest flows
+- import support for `Nessus`, `Burp Suite`, `Nmap`, `Acunetix`, `OWASP ZAP`, `Nuclei`, `OpenVAS`, `Qualys`, `Nexpose`, `AppSpider`, `SARIF`, and `Trivy`
+- PDF and DOCX report generation from customizable templates
+- project scope import from Nmap XML
+- built-in vulnerability reference data, CWE data, project types, and report standards
+- OpenAPI schema generation with `drf-spectacular`
 
-**Vulnerability tracking**
-- Manage findings across multiple projects with full status tracking and retest cycles
-- Triage findings as false positive, suppressed, or verified; document risk acceptance decisions
-- Capture SAST source/sink data, container and Kubernetes metadata, dependency information, compliance mappings, and MITRE ATT&CK details alongside each finding
+If you need a parser that is not included yet, see [docs/writing-a-parser.md](docs/writing-a-parser.md).
 
-**Scanner import — 12 parsers included**
-
-Nessus · Burp Suite · Nmap · Acunetix · OWASP ZAP · Nuclei · OpenVAS · Qualys · Nexpose · AppSpider · SARIF · Trivy
-
-Missing your scanner? Parsers are self-contained and designed to be community-contributed — see [Writing a parser](docs/writing-a-parser.md).
-
-**Reporting**
-- Generate PDF and DOCX reports from fully customizable templates
-- Version-control templates and restore previous versions
-- Inject charts, screenshots, and structured finding data dynamically
-
-**Project management**
-- Track scope, schedule, and status per project
-- Import scope directly from Nmap XML output
-
-**Reference data**
-- Built-in vulnerability template library to speed up manual finding entry
-- CWE reference data, project types, and report standards — all configurable
-
----
-
-## Architecture at a glance
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -65,24 +49,28 @@ flowchart LR
     Nginx --> API["Django REST API"]
     API --> DB[("PostgreSQL")]
     API --> Cache[("Redis cache")]
-    API --> Parsers["Scanner parsers\n(nmap, nessus, burp, zap, nuclei,\nacunetix, openvas, qualys, nexpose,\nappspider, sarif, trivy)"]
-    Parsers --> DB
-    API --> Reports["DOCX / PDF report engine\n(docxtpl + sandboxed Jinja2)"]
+    API --> Parsers["Scanner parsers"]
+    API --> Reports["DOCX / PDF report engine"]
 ```
 
-- **Backend:** Django + Django REST Framework, JWT auth, PostgreSQL (falls back to SQLite for local dev), Redis for shared caching.
-- **Frontend:** React + TypeScript, built with Vite, served by Nginx alongside the API in production.
-- **Parsers:** one self-contained package per scanner under `securityhub/utils/parsers/`, registered through a shared `BaseParser` interface — see [`docs/writing-a-parser.md`](docs/writing-a-parser.md).
-- **Reports:** customizable DOCX/PDF templates rendered through a sandboxed template engine (see [SECURITY.md](SECURITY.md) for the SSTI hardening this requires).
-- **Deployment:** Docker Compose (`nginx` + `securityhub` + `postgres`), fronted by `install.sh` for interactive first-time setup.
+Main components:
+- Backend: Django + Django REST Framework
+- Frontend: React + TypeScript + Vite
+- Database: PostgreSQL in production, SQLite fallback for local dev only
+- Cache: in-memory by default, Redis recommended for multi-worker deployments
+- Deployment: Docker Compose with `nginx`, `securityhub`, and `postgres`
 
-For a deeper walkthrough of the Django apps, data flow, and request lifecycle, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+For the full application walkthrough, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
----
+## Quick Start
 
-## Quick start
+### Recommended path: Docker Compose
 
-Requires Docker and Docker Compose.
+Prerequisites:
+- Docker
+- Docker Compose
+
+Clone the repo and run the installer:
 
 ```bash
 git clone https://github.com/Gastordia/SecurityHub-Community.git
@@ -90,103 +78,198 @@ cd SecurityHub-Community
 bash install.sh
 ```
 
-The installer detects your operating system, installs Docker if needed, and walks through configuration interactively.
+What the installer does:
+- detects the OS
+- installs Docker if needed
+- creates `.env`
+- prompts for ports, secrets, database credentials, and admin bootstrap values
+- starts the stack
 
-**Manual setup:**
+### Manual Docker setup
+
+If you do not want the interactive installer:
 
 ```bash
-cp env.example .env      # copy the config template
-nano .env                # set SECRET_KEY, domain, and credentials
+git clone https://github.com/Gastordia/SecurityHub-Community.git
+cd SecurityHub-Community
+cp env.example .env
+```
+
+Edit `.env` and set these values before first start:
+- `SECRET_KEY`
+- `ALLOWED_HOST`
+- `CORS_ALLOWED_ORIGINS`
+- `CSRF_TRUSTED_ORIGINS`
+- `POSTGRES_PASSWORD`
+- `REDIS_PASSWORD`
+- `FRONTEND_URL`
+- `SETUP_EMAIL`
+- `SETUP_PASSWORD` or leave the documented default and change it immediately after login
+
+Then start the stack:
+
+```bash
 docker compose up -d
 ```
 
-Once running, the application is available at:
+Default URLs with the default port mapping:
 
-| | URL |
+| Service | URL |
 |---|---|
-| HTTP | http://localhost:3000 |
-| HTTPS | https://localhost:8443 |
-| API docs | https://localhost:8443/api/docs |
+| Frontend HTTP | http://localhost:3000 |
+| Frontend HTTPS | https://localhost:8443 |
+| API docs | https://localhost:8443/api/docs/ |
+| OpenAPI schema endpoint | https://localhost:8443/api/schema/ |
 
-For production, point your domain's DNS at the host and set `ALLOWED_HOST`, `CORS_ALLOWED_ORIGINS`, and `CSRF_TRUSTED_ORIGINS` in `.env`. See [docs/INSTALLATION.md](docs/INSTALLATION.md) for the full guide.
+Notes:
+- `/api/docs/` requires authentication on a running instance
+- the repo also contains a static schema snapshot at [openapi-schema.yaml](openapi-schema.yaml)
+- PostgreSQL is required for production use
 
----
+## First Login and Bootstrap
 
-## Uninstalling
+The app creates its initial admin account through `manage.py first_setup`.
 
-Removes only what the installer created — source code, Docker, Node.js, and system packages are never touched.
+In Docker installs:
+- `install.sh` handles this for you
+- the backend startup script also runs first-time setup automatically if the instance has not been initialized yet
+
+The bootstrap values come from `.env`:
+- `SETUP_USERNAME`
+- `SETUP_EMAIL`
+- `SETUP_FULL_NAME`
+- `SETUP_POSITION`
+- `SETUP_COMPANY_NAME`
+- `SETUP_PASSWORD`
+
+If you leave `SETUP_PASSWORD=ChangeMe123!`, change it immediately after login.
+
+## Production Notes
+
+SecurityHub will run locally with loose settings, but production needs deliberate configuration.
+
+Minimum production checklist:
+- set a strong `SECRET_KEY`
+- use real hostnames in `ALLOWED_HOST`
+- set exact browser origins in `CORS_ALLOWED_ORIGINS`
+- set exact POST origins in `CSRF_TRUSTED_ORIGINS`
+- keep `DEBUG=False`
+- use PostgreSQL, not SQLite
+- enable HTTPS in front of the application
+- review `WHITELIST_IP` carefully because it controls what the backend may fetch when generating reports
+
+Storage:
+- local filesystem storage works out of the box
+- S3-compatible storage is supported through `USE_S3=True` and the `AWS_*` variables in [.env example](env.example)
+
+Caching:
+- a blank `REDIS_URL` uses per-process memory cache
+- for multiple Gunicorn workers or multiple replicas, set `REDIS_URL`
+
+## Local Development
+
+Python dependency management uses `uv`. The Python source of truth is [pyproject.toml](pyproject.toml) with [uv.lock](uv.lock).
+
+### Backend
+
+From the repository root:
 
 ```bash
-bash uninstall.sh
-```
-
-**Options:**
-
-| Flag | Effect |
-|------|--------|
-| `--keep-data` | Preserve the database (Docker volume or PostgreSQL DB) |
-| `--keep-env` | Leave the `.env` file in place |
-| `--yes` | Skip the confirmation prompt |
-
-Uploaded files in `securityhub/media/` are always left intact regardless of flags.
-
----
-
-## Development setup
-
-Python dependency management uses `uv`. The Python source of truth is `pyproject.toml` with `uv.lock`.
-
-**Backend:**
-
-```bash
+cp env.example .env
 uv sync
 uv run python securityhub/manage.py migrate
 uv run python securityhub/manage.py first_setup
 uv run python securityhub/manage.py runserver
 ```
 
-**Frontend:**
+Useful local-development notes:
+- if all `POSTGRES_*` variables are absent, Django falls back to SQLite
+- Redis is optional for single-worker local development
+- the backend reads `.env` from the repo root
+
+### Frontend
 
 ```bash
 cd frontend
 npm install
-npm start        # dev server on :5173
+npm start
 ```
 
-**Tests:**
+This starts the Vite dev server on `http://localhost:5173`.
+
+### Tests
+
+Backend:
 
 ```bash
 uv run python securityhub/manage.py test
 cd securityhub && uv run pytest
-cd frontend && npm test      # frontend
 ```
 
----
+Frontend:
+
+```bash
+cd frontend
+npm test
+```
+
+## Project Layout
+
+High-level directories:
+- `securityhub/` — Django project and apps
+- `frontend/` — React frontend
+- `docker/` — Dockerfiles
+- `scripts/` — startup and support scripts
+- `docs/` — architecture and contributor docs
+- `securityhub/utils/parsers/` — scanner parser implementations
+- `securityhub/tests/fixtures/scans/` — parser sample files used by tests
 
 ## Documentation
 
-| Doc | What's in it |
+| Document | Purpose |
 |---|---|
-| [docs/INSTALLATION.md](docs/INSTALLATION.md) | Pointers for Docker and local development install |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Django apps, data flow, request lifecycle, parser pipeline |
-| [docs/writing-a-parser.md](docs/writing-a-parser.md) | How to add support for a new scanner |
-| API reference | Live OpenAPI docs at `/api/docs` on your running instance, or [`openapi-schema.yaml`](openapi-schema.yaml) |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Dev environment setup, branching, commit style, PR process |
-| [SECURITY.md](SECURITY.md) | Vulnerability disclosure policy, secure-coding rules (e.g. XML parsing) |
+| [docs/INSTALLATION.md](docs/INSTALLATION.md) | Installation pointers for Docker and local development |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Django apps, request flow, parser pipeline, and system layout |
+| [docs/writing-a-parser.md](docs/writing-a-parser.md) | Contract for adding a new scanner parser |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Development workflow, testing, and contribution rules |
+| [SECURITY.md](SECURITY.md) | Vulnerability disclosure policy and secure-coding notes |
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community expectations |
+| [openapi-schema.yaml](openapi-schema.yaml) | Checked-in OpenAPI schema snapshot |
 
----
+## Uninstalling
+
+The uninstaller removes what the installer created. It does not remove your source tree or arbitrary system packages.
+
+```bash
+bash uninstall.sh
+```
+
+Options:
+
+| Flag | Effect |
+|---|---|
+| `--keep-data` | Preserve database data |
+| `--keep-env` | Keep `.env` |
+| `--yes` | Skip confirmation |
+
+Uploaded media under `securityhub/media/` is left in place.
 
 ## Security
 
-Report vulnerabilities privately via [GitHub Security Advisories](../../security/advisories/new). Do not open a public issue. See [SECURITY.md](SECURITY.md) for the full policy.
+If you find a vulnerability, report it privately through [GitHub Security Advisories](../../security/advisories/new).
 
----
+Do not open public issues for security findings.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions are welcome, especially:
+- new parser support
+- bug fixes with tests
+- documentation fixes
+- reporting and template improvements
+
+Start with [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-MIT — see [LICENSE.md](LICENSE.md).
+MIT. See [LICENSE.md](LICENSE.md).
