@@ -85,7 +85,6 @@ venv.bak/
 win/
 
 # Poetry
-.poetry/
 
 # Pipenv
 Pipfile.lock
@@ -140,7 +139,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Keep package-lock.json and poetry.lock
+# Keep package-lock.json and uv.lock
 yarn.lock
 pnpm-lock.yaml
 

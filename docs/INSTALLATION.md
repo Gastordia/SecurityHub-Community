@@ -10,7 +10,7 @@ Short pointer doc. For full steps, follow the links below.
 
 ## Development (local backend + frontend)
 
-- **[CONTRIBUTING — Setting up development environment](../CONTRIBUTING.md#setting-up-development-environment)** — Poetry, PostgreSQL, Redis, env, `first_setup`, runserver.
+- **[CONTRIBUTING — Setting up development environment](../CONTRIBUTING.md#setting-up-development-environment)** — uv, PostgreSQL, Redis, env, `first_setup`, runserver.
 - **Env:** Copy [`env.example`](../env.example) at repo root to `.env` and configure.
 
 ## More

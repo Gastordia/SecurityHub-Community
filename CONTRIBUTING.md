@@ -34,7 +34,7 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 
 - **PostgreSQL**: Install and configure a PostgreSQL database (or omit the `POSTGRES_*` env vars to fall back to SQLite for local dev)
 - **Redis**: Optional — used as a shared cache backend across multiple workers (see `REDIS_URL` in `env.example`); not required for single-worker local development
-- **Poetry**: Required for dependency management (do not use pip)
+- **uv**: Required for Python dependency management
 - **Node.js & npm**: Required for frontend development
 
 #### Backend Setup
@@ -44,9 +44,9 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
    cd securityhub
    ```
 
-2. **Install backend dependencies with Poetry**
+2. **Install backend dependencies with uv**
    ```bash
-   poetry install
+   uv sync
    ```
 
 3. **Configure environment variables**
@@ -58,12 +58,12 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 
 4. **First-time setup (initializes accounts, permissions, migrations, etc.)**
    ```bash
-   poetry run python securityhub/manage.py first_setup
+   uv run python securityhub/manage.py first_setup
    ```
 
 5. **Start the development server**
    ```bash
-   poetry run python securityhub/manage.py runserver
+   uv run python securityhub/manage.py runserver
    ```
 
 #### Frontend Setup
@@ -193,7 +193,7 @@ Fixes #123
 - Ensure all tests pass before submitting a pull request
 - Run tests using:
   ```bash
-  poetry run python securityhub/manage.py test
+  uv run python securityhub/manage.py test
   ```
 
 ## Documentation

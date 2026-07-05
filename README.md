@@ -134,13 +134,15 @@ Uploaded files in `securityhub/media/` are always left intact regardless of flag
 
 ## Development setup
 
+Python dependency management uses `uv`. The Python source of truth is `pyproject.toml` with `uv.lock`.
+
 **Backend:**
 
 ```bash
-poetry install && poetry shell
-python securityhub/manage.py migrate
-python securityhub/manage.py first_setup
-python securityhub/manage.py runserver
+uv sync
+uv run python securityhub/manage.py migrate
+uv run python securityhub/manage.py first_setup
+uv run python securityhub/manage.py runserver
 ```
 
 **Frontend:**
@@ -154,7 +156,8 @@ npm start        # dev server on :5173
 **Tests:**
 
 ```bash
-cd securityhub && pytest     # backend (must run from securityhub/, where manage.py lives)
+uv run python securityhub/manage.py test
+cd securityhub && uv run pytest
 cd frontend && npm test      # frontend
 ```
 

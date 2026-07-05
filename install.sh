@@ -936,15 +936,18 @@ END\$\$;" 2>/dev/null || true
   success "PostgreSQL database ready."
 
   # -- Python virtualenv + dependencies ------------------------------------
-  VENV_DIR="${SCRIPT_DIR}/venv"
-  info "Creating Python virtual environment at ${VENV_DIR}..."
-  python3 -m venv "$VENV_DIR"
+  VENV_DIR="${SCRIPT_DIR}/.venv"
+  export UV_CACHE_DIR="${TMPDIR:-/tmp}/securityhub-uv-cache"
+  export PATH="${HOME}/.local/bin:${PATH}"
+  cd "${SCRIPT_DIR}"
+  if ! command -v uv >/dev/null 2>&1; then
+    info "Installing uv..."
+    python3 -m pip install --quiet --user uv
+  fi
+  info "Syncing Python dependencies with uv (this may take a few minutes)..."
+  uv sync --locked --no-install-project
   # shellcheck source=/dev/null
   source "${VENV_DIR}/bin/activate"
-
-  info "Installing Python dependencies (this may take a few minutes)..."
-  pip install --quiet --upgrade pip
-  pip install --quiet -r "${SCRIPT_DIR}/requirements.txt"
   success "Python dependencies installed."
 
   # -- Build frontend -------------------------------------------------------
