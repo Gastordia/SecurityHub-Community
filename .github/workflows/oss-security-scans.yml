@@ -251,12 +251,13 @@ jobs:
           timeout 90 bash -c 'until docker compose ps | grep -q "healthy"; do sleep 2; done'
 
       - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.12.0
+        uses: zaproxy/action-baseline@v0.15.0
         with:
           target: 'https://localhost:8443'
           cmd_options: '-I'
           fail_action: false
           allow_issue_writing: false
+          artifact_name: 'zap-baseline-report'
 
       - name: Dump service logs on failure
         if: failure()
