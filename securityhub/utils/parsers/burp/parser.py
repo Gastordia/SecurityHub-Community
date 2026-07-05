@@ -257,7 +257,11 @@ class BurpParser(BaseParser):
 
             # Extract name
             name_elem = node.find("name")
-            name_text = name_elem.text if name_elem is not None else "Unknown Vulnerability"
+            name_text = (
+                name_elem.text.strip()
+                if name_elem is not None and name_elem.text and name_elem.text.strip()
+                else vuln_type_text
+            )
 
             # Extract CWE
             cwe_ids = []
@@ -283,6 +287,7 @@ class BurpParser(BaseParser):
                 evidence=background,
                 references=[references] if references else [],
                 cwe_ids=cwe_ids,
+                affected_asset=url or f"{url_host}{path_text}",
                 scanner_type="Burp Suite",
                 scanner_id=vuln_type_text,
                 raw_data={

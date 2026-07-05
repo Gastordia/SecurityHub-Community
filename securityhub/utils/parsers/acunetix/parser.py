@@ -61,7 +61,16 @@ class AcunetixParser(BaseParser):
                     data = json.load(f)
 
                 # Check for Acunetix JSON structure
-                is_valid = "Vulnerabilities" in data or "Generated" in data
+                vulnerabilities = data.get("Vulnerabilities")
+                first_vuln = vulnerabilities[0] if isinstance(vulnerabilities, list) and vulnerabilities else {}
+                is_valid = (
+                    isinstance(data, dict)
+                    and isinstance(vulnerabilities, list)
+                    and (
+                        "Generated" in data
+                        or any(key in first_vuln for key in ("Name", "Severity", "Url", "Classification", "LookupId"))
+                    )
+                )
                 logger.info("AcunetixParser: JSON validation result: %s", is_valid)
                 return is_valid
             except Exception as e:
@@ -518,5 +527,4 @@ class AcunetixParser(BaseParser):
             else:
                 result[child.tag] = child_data
         return result
-
 

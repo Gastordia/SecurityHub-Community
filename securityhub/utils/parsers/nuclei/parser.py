@@ -48,17 +48,28 @@ class NucleiParser(BaseParser):
             # Check for Nuclei JSON structure
             if content.startswith('['):
                 data = json.loads(content)
-                return isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict)
+                return (
+                    isinstance(data, list)
+                    and len(data) > 0
+                    and isinstance(data[0], dict)
+                    and self._looks_like_nuclei_item(data[0])
+                )
             elif content.startswith('{'):
                 # Line-by-line JSON format
                 lines = content.split('\n')
                 for line in lines:
                     if line.strip():
                         data = json.loads(line)
-                        return isinstance(data, dict)
+                        return isinstance(data, dict) and self._looks_like_nuclei_item(data)
             return False
         except Exception:
             return False
+
+    def _looks_like_nuclei_item(self, data: Dict[str, Any]) -> bool:
+        """Require nuclei-specific keys so generic JSON is not misdetected."""
+        if not isinstance(data, dict):
+            return False
+        return any(key in data for key in ("templateID", "template-id", "matcher-name", "matched-at", "matchedAt"))
 
     def parse_findings(self, file_path: str) -> List[StandardizedFinding]:
         """Parse Nuclei JSON file and return standardized findings"""
@@ -122,7 +133,13 @@ class NucleiParser(BaseParser):
         try:
             # Extract basic information
             template_id = item.get("templateID", item.get("template-id", ""))
-            template_name = item.get("template", "")
+            template_name = (
+                item.get("template")
+                or item.get("template-name")
+                or item.get("template_name")
+                or item.get("info", {}).get("name")
+                or template_id
+            )
             info = item.get("info", {})
             
             # Get severity
@@ -241,5 +258,3 @@ class NucleiParser(BaseParser):
             return SeverityLevel.LOW
         else:
             return SeverityLevel.LOW
-
-

@@ -89,25 +89,17 @@ class NmapParser(BaseParser):
             )
 
         for host in root.findall("host"):
-            host_info = "### Host\n\n"
-
             # Get IP address
             ip_element = host.find("address[@addrtype='ipv4']")
             if ip_element is None:
                 continue
             ip = ip_element.attrib["addr"]
-            if ip is not None:
-                host_info += f"**IP Address:** {ip}\n"
 
             # Get FQDN
             fqdn_element = host.find("hostnames/hostname[@type='PTR']")
             fqdn = None
             if fqdn_element is not None:
                 fqdn = fqdn_element.attrib["name"]
-                if fqdn is not None:
-                    host_info += f"**FQDN:** {fqdn}\n"
-
-            host_info += "\n\n"
 
             # Get MAC address
             mac_element = host.find("address[@addrtype='mac']")
@@ -141,15 +133,8 @@ class NmapParser(BaseParser):
                 for os_match in os.iter("osmatch"):
                     if "name" in os_match.attrib:
                         os_info['name'] = os_match.attrib["name"]
-                        host_info += (
-                            "**Host OS:** {}\n".format(os_match.attrib["name"])
-                        )
                     if "accuracy" in os_match.attrib:
                         os_info['accuracy'] = os_match.attrib["accuracy"]
-                        host_info += "**Accuracy:** {}%\n".format(
-                            os_match.attrib["accuracy"],
-                        )
-                host_info += "\n\n"
 
             # Check if host is up
             status_element = host.find("status")
@@ -175,7 +160,11 @@ class NmapParser(BaseParser):
                 find = StandardizedFinding(
                     title=f"Nmap scan results for {host_addr}",
                     severity=SeverityLevel.INFO,
-                    description=host_info,
+                    description=self._build_host_summary(
+                        ip=ip,
+                        fqdn=fqdn,
+                        os_info=os_info,
+                    ),
                     solution="Review if this host should be accessible",
                     affected_asset=host_addr,
                     scanner_type="nmap",
@@ -234,38 +223,8 @@ class NmapParser(BaseParser):
                     port=port_num
                 )
 
-                title = f"Open port: {port_num}/{protocol}"
-                description = host_info
-                description += f"**Port/Protocol:** {port_num}/{protocol}\n"
-
                 # Get service information
-                service_info = "\n\n"
                 service_element = port_element.find("service")
-                if service_element is not None:
-                    if "product" in service_element.attrib:
-                        service_info += (
-                            "**Product:** {}\n".format(service_element.attrib["product"])
-                        )
-
-                    if "version" in service_element.attrib:
-                        service_info += (
-                            "**Version:** {}\n".format(service_element.attrib["version"])
-                        )
-
-                    if "extrainfo" in service_element.attrib:
-                        service_info += (
-                            "**Extra Info:** {}\n".format(service_element.attrib["extrainfo"])
-                        )
-                    description += service_info
-                
-                # Get script information
-                script_element = port_element.find("script")
-                if script_element is not None:
-                    if script_id := script_element.attrib.get("id"):
-                        description += f"**Script ID:** {script_id}\n"
-                    if script_output := script_element.attrib.get("output"):
-                        description += f"**Script Output:** {script_output}\n"
-                description += "\n\n"
 
                 # Process vulnerability scripts (like vulners)
                 for script_element in port_element.findall('script[@id="vulners"]'):
@@ -303,8 +262,12 @@ class NmapParser(BaseParser):
                     if service_name not in find.raw_data['services']:
                         find.raw_data['services'].append(service_name)
                 
-                if description is not None:
-                    find.description += description
+                find.description += self._build_port_section(
+                    port_num=port_num,
+                    protocol=protocol,
+                    service_element=service_element,
+                    script_elements=port_element.findall('script'),
+                )
 
             # Populate nmap_details after all ports for this host are collected
             find = dupes[dupe_key]
@@ -324,6 +287,37 @@ class NmapParser(BaseParser):
             }
 
         return list(dupes.values())
+
+    def _build_host_summary(self, ip: str, fqdn: Optional[str], os_info: Dict[str, str]) -> str:
+        lines = ["### Host", "", f"**IP Address:** {ip}"]
+        if fqdn:
+            lines.append(f"**FQDN:** {fqdn}")
+        if os_info.get("name"):
+            lines.append(f"**Host OS:** {os_info['name']}")
+        if os_info.get("accuracy"):
+            lines.append(f"**Accuracy:** {os_info['accuracy']}%")
+        lines.extend(["", "### Open Ports", ""])
+        return "\n".join(lines)
+
+    def _build_port_section(self, port_num: Optional[int], protocol: str, service_element, script_elements) -> str:
+        lines = [f"#### {port_num}/{protocol}", ""]
+
+        if service_element is not None:
+            if product := service_element.attrib.get("product"):
+                lines.append(f"**Product:** {product}")
+            if version := service_element.attrib.get("version"):
+                lines.append(f"**Version:** {version}")
+            if extra := service_element.attrib.get("extrainfo"):
+                lines.append(f"**Extra Info:** {extra}")
+
+        for script_element in script_elements:
+            if script_id := script_element.attrib.get("id"):
+                lines.append(f"**Script ID:** {script_id}")
+            if script_output := script_element.attrib.get("output"):
+                lines.append(f"**Script Output:** \n{script_output}")
+
+        lines.append("")
+        return "\n".join(lines)
 
     def _process_vulners_script(self, dupes: Dict, script_element, endpoint: StandardizedEndpoint, report_date: Optional[datetime.datetime]):
         """Process vulners script output for vulnerability information"""

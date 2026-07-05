@@ -53,37 +53,46 @@ class ScannerDetector:
         # Extension-based detection
         extension_mapping = {
             '.xml': ['nmap', 'nessus', 'openvas', 'burp', 'zap', 'acunetix', 'nexpose'],
-            '.json': ['nuclei', 'acunetix', 'appspider'],
+            '.json': ['sarif', 'trivy', 'acunetix', 'nuclei'],
             '.csv': ['nessus', 'openvas'],
-            '.nessus': ['nessus']
+            '.nessus': ['nessus'],
+            '.sarif': ['sarif'],
         }
         
         candidates = extension_mapping.get(extension, [])
         
+        content_signatures = {
+            'nmap': ['<nmaprun', 'nmap'],
+            'nessus': ['<NessusClientData_v2', 'Nessus'],
+            'openvas': ['<report>', 'OpenVAS'],
+            'burp': ['<issues>', 'Burp'],
+            'zap': ['<OWASPZAPReport', 'ZAP'],
+            'nuclei': ['"templateID"', '"template-id"', '"matched-at"', '"matchedAt"'],
+            'acunetix': ['<Scan>', 'Acunetix', '"Generated"', '"LookupId"', '"Classification"'],
+            'nexpose': ['<NexposeReport', 'Nexpose'],
+            'appspider': ['AppSpider', 'Rapid7', '<VulnSummary'],
+            'sarif': ['"runs"', '"version":"2.', '"version": "2.'],
+            'trivy': ['"SchemaVersion"', '"Results"', '"ArtifactName"', '"vulnerabilities"', '"projectName"'],
+        }
+
         # Content-based detection
         try:
             with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
                 content = f.read(1024)  # Read first 1KB
-                
-                # Content signatures
-                content_signatures = {
-                    'nmap': ['<nmaprun', 'nmap'],
-                    'nessus': ['<NessusClientData_v2', 'Nessus'],
-                    'openvas': ['<report>', 'OpenVAS'],
-                    'burp': ['<issues>', 'Burp'],
-                    'zap': ['<OWASPZAPReport', 'ZAP'],
-                    'nuclei': ['"templateID"', '"template"'],
-                    'acunetix': ['<Scan>', 'Acunetix'],
-                    'nexpose': ['<NexposeReport', 'Nexpose'],
-                    'appspider': ['AppSpider', 'Rapid7']
-                }
-                
-                for scanner, signatures in content_signatures.items():
+
+                # Prefer extension-specific candidates in their declared priority order.
+                for scanner in candidates:
+                    signatures = content_signatures.get(scanner, [])
                     if any(sig in content for sig in signatures):
-                        if scanner in candidates:
-                            return scanner
+                        return scanner
+
+                # Then consider signatures for scanners outside the extension bucket.
+                for scanner, signatures in content_signatures.items():
+                    if scanner in candidates:
+                        continue
+                    if any(sig in content for sig in signatures):
                         candidates.append(scanner)
-                        
+
         except Exception:
             pass
         
@@ -142,5 +151,3 @@ class ScannerDetector:
     def get_supported_formats(self, scanner_type: str) -> List[str]:
         """Get supported file formats for a scanner"""
         return self.parser_registry.get_supported_formats(scanner_type)
-
-

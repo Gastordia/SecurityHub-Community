@@ -327,6 +327,8 @@ class NexposeParser(BaseParser):
         for host in hosts:
             # Manage findings by node only
             for vuln in host["vulns"]:
+                if self._is_low_quality_finding(vuln):
+                    continue
                 dupe_key = vuln["severity"] + vuln["name"]
 
                 find = self._find_standardized_finding(dupe_key, dupes, vuln)
@@ -341,6 +343,8 @@ class NexposeParser(BaseParser):
             # Manage findings by service
             for service in host["services"]:
                 for vuln in service["vulns"]:
+                    if self._is_low_quality_finding(vuln):
+                        continue
                     dupe_key = vuln["severity"] + vuln["name"]
 
                     find = self._find_standardized_finding(dupe_key, dupes, vuln)
@@ -360,6 +364,21 @@ class NexposeParser(BaseParser):
                     find.tags.extend(vuln.get("tags", []))
 
         return list(dupes.values())
+
+    def _is_low_quality_finding(self, vuln: Dict[str, Any]) -> bool:
+        """Drop host/service inventory noise from vulnerability imports."""
+        name = str(vuln.get("name", "")).strip().lower()
+        if not name:
+            return False
+        if name == "host up":
+            return True
+        if name == "port open":
+            return True
+        if name.startswith("open port "):
+            return True
+        if name.startswith("service: "):
+            return True
+        return False
 
     def _find_standardized_finding(self, dupe_key, dupes, vuln) -> StandardizedFinding:
         """Create or update standardized finding"""
