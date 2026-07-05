@@ -35,7 +35,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Trivy filesystem scan (dependencies)
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -67,7 +67,7 @@ jobs:
           cache-to: type=gha,mode=min
 
       - name: Trivy image scan (API image)
-        uses: aquasecurity/trivy-action@0.29.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: 'securityhub-api:trivy-scan'
           format: 'sarif'
@@ -232,8 +232,11 @@ jobs:
           echo "POSTGRES_DB=securityhub" >> .env
           echo "POSTGRES_HOST=postgres" >> .env
           echo "POSTGRES_PORT=5432" >> .env
-          echo "REDIS_PASSWORD=test_redis_password" >> .env
-          echo "REDIS_URL=redis://:test_redis_password@redis:6379/" >> .env
+          # No redis service is defined in docker-compose.yml, so REDIS_URL is
+          # deliberately left unset - settings.py falls back to LocMemCache
+          # when it's blank. Setting it to a nonexistent "redis" host breaks
+          # the /api/config/ping/ healthcheck (it calls cache.get()), which
+          # makes the securityhub container report unhealthy forever.
           echo "SECRET_KEY=test-secret-key-for-ci-only" >> .env
           echo 'WHITELIST_IP=["http://127.0.0.1:8080","http://127.0.0.1:8000"]' >> .env
           echo 'ALLOWED_HOST=["127.0.0.1","localhost","*"]' >> .env
