@@ -27,6 +27,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 import tempfile
 
 from utils.services.parser_service import ParserService
+from utils.parsers.registry import ParserRegistry
 
 
 class TestParserServiceMigrated(TestCase):
@@ -86,12 +87,20 @@ class TestParserServiceMigrated(TestCase):
         ]
     
     def test_parser_asset_mappings_initialization(self):
-        """Test that parser asset mappings are properly initialized"""
-        # Test that all expected scanner types are present
-        expected_scanners = ['nmap', 'nessus', 'openvas', 'burp', 'zap', 'nuclei', 'acunetix', 'nexpose', 'appspider', 'qualys']
-        
+        """Every registered parser must have an asset-mapping entry.
+
+        Regression test: this used to assert against a hardcoded 10-scanner
+        list that silently drifted out of sync with ParserRegistry (sarif and
+        trivy were both missing, so their findings never populated the asset
+        inventory - see parser_service.py's parser_asset_mappings). Deriving
+        the expected list from the registry means this can't go stale again.
+        """
+        expected_scanners = ParserRegistry.list_parsers()
+        self.assertTrue(expected_scanners, "ParserRegistry has no registered parsers")
+
         for scanner in expected_scanners:
-            self.assertIn(scanner, self.parser_service.parser_asset_mappings)
+            self.assertIn(scanner, self.parser_service.parser_asset_mappings,
+                          f"'{scanner}' is registered but has no parser_asset_mappings entry")
             self.assertIsInstance(self.parser_service.parser_asset_mappings[scanner], dict)
     
     def test_categorize_parser_output(self):

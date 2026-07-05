@@ -146,6 +146,26 @@ class ParserService:
                 'protocol_fields': [],
                 'url_fields': ['url'],
                 'metadata_fields': []
+            },
+            'sarif': {
+                'ip_fields': [],
+                'hostname_fields': [],
+                'port_fields': [],
+                'service_fields': [],
+                'protocol_fields': [],
+                'endpoint_fields': ['affected_endpoints'],
+                'metadata_fields': ['rule_id', 'tool_name', 'region', 'level', 'fingerprints'],
+                'vulnerability_fields': ['cve_ids']
+            },
+            'trivy': {
+                'ip_fields': [],
+                'hostname_fields': [],
+                'port_fields': [],
+                'service_fields': [],
+                'protocol_fields': [],
+                'endpoint_fields': ['affected_endpoints'],
+                'metadata_fields': ['package_name', 'package_version', 'fixed_version', 'pkg_path', 'artifact_name', 'artifact_type'],
+                'vulnerability_fields': ['cve_ids']
             }
         }
         
