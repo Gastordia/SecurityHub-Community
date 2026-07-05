@@ -139,6 +139,18 @@ Enhancement suggestions are welcome! Please provide:
 2. Commit your changes following our [commit guidelines](#commit-guidelines)
 3. Share the branch or patch for review
 
+### Adding a New Scanner Parser
+
+Want to add support for a scanner SecurityHub doesn't parse yet? See
+[`docs/writing-a-parser.md`](docs/writing-a-parser.md) for the full contract —
+it covers the `BaseParser` interface, the `description` vs `evidence` field
+distinction, and a "plain text only" rule that's easy to miss (nothing in the
+app renders Markdown or HTML). Every new parser needs a synthetic sample file
+under `securityhub/tests/fixtures/scans/<scanner_type>/` and an entry in
+`securityhub/tests/parsers/test_parser_conformance.py` — that one addition runs
+a full conformance check (valid findings, no leftover Markdown/HTML, no
+false-positive detection against every other scanner's sample) automatically.
+
 ## Development Workflow
 
 ### Branching Strategy
