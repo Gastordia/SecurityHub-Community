@@ -39,11 +39,11 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
+      - name: Extract API metadata
+        id: meta_api
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/securityhub
+          images: ghcr.io/${{ github.repository_owner }}/securityhub-api
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -53,34 +53,56 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push API image
+        id: build_api
         uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/Dockerfile_API
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/${{ github.repository_owner }}/securityhub-api:${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_api.outputs.tags }}
+          labels: ${{ steps.meta_api.outputs.labels }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Extract Frontend metadata
+        id: meta_frontend
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/securityhub-frontend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
       - name: Build and push Frontend image
+        id: build_frontend
         uses: docker/build-push-action@v5
         with:
           context: .
           file: docker/Dockerfile_frontend
           push: ${{ github.event_name != 'pull_request' }}
-          tags: ghcr.io/${{ github.repository_owner }}/securityhub-frontend:${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: ${{ steps.meta_frontend.outputs.tags }}
+          labels: ${{ steps.meta_frontend.outputs.labels }}
           platforms: linux/amd64,linux/arm64
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Generate artifact attestation
+      - name: Generate API artifact attestation
         uses: actions/attest-build-provenance@v1
         if: github.event_name != 'pull_request'
         with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/securityhub
-          subject-digest: ${{ steps.build.outputs.digest }}
+          subject-name: ghcr.io/${{ github.repository_owner }}/securityhub-api
+          subject-digest: ${{ steps.build_api.outputs.digest }}
           push-to-registry: true
 
+      - name: Generate Frontend artifact attestation
+        uses: actions/attest-build-provenance@v1
+        if: github.event_name != 'pull_request'
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/securityhub-frontend
+          subject-digest: ${{ steps.build_frontend.outputs.digest }}
+          push-to-registry: true
