@@ -30,39 +30,50 @@ class QualysParser(BaseParser):
             supported_formats=["xml"]
         )
     
+    # Qualys XML exports vary by report type; try each of these paths in order.
+    _VULN_ELEMENT_PATHS = [
+        ".//VULN",
+        ".//Vulnerability",
+        ".//VULNERABILITY",
+        ".//VULN_LIST/VULN",
+        ".//SCAN_RESULTS/VULN",
+        ".//REPORT/VULN",
+        ".//KNOWLEDGE_BASE/VULN",
+    ]
+
     def validate_file(self, file_path: str) -> bool:
-        """Validate if file is a valid Qualys report"""
+        """Validate if file is a valid Qualys report.
+
+        Anchored on QID (Qualys' vulnerability identifier) rather than a generic
+        root-tag substring match - "report"/"scan"/"vulnerability" are common root
+        tag fragments across many other scanners (Nexpose, ZAP, OpenVAS all matched
+        the old check), so a Qualys-specific marker is required to avoid stealing
+        their uploads.
+        """
         try:
             root = parse(file_path).getroot()
-            # Check for Qualys-specific root elements
-            return any(tag in root.tag.lower() for tag in [
-                "qualys", "scan", "vulnerability", "report", "knowledgebase"
-            ])
+            for path in self._VULN_ELEMENT_PATHS:
+                elements = root.findall(path)
+                if elements and any(
+                    elem.find("QID") is not None or "QID" in elem.attrib
+                    for elem in elements
+                ):
+                    return True
+            return False
         except Exception as e:
             logger.debug("Qualys validation failed: %s", e)
             return False
-    
+
     def parse_findings(self, file_path: str) -> List[StandardizedFinding]:
         """Parse Qualys XML report and return standardized findings"""
         try:
             root = parse(file_path).getroot()
             findings = []
-            
+
             # Handle different Qualys XML structures
             vuln_elements = []
-            
-            # Try different possible paths for vulnerabilities
-            possible_paths = [
-                ".//VULN",
-                ".//Vulnerability", 
-                ".//VULNERABILITY",
-                ".//VULN_LIST/VULN",
-                ".//SCAN_RESULTS/VULN",
-                ".//REPORT/VULN",
-                ".//KNOWLEDGE_BASE/VULN"
-            ]
-            
-            for path in possible_paths:
+
+            for path in self._VULN_ELEMENT_PATHS:
                 vuln_elements = root.findall(path)
                 if vuln_elements:
                     logger.info("Found %s vulnerabilities using path: %s", len(vuln_elements), path)
@@ -194,7 +205,11 @@ class QualysParser(BaseParser):
         references = []
         
         # Look for references element
-        refs_elem = vuln.find("REFERENCES") or vuln.find("LINKS") or vuln.find("URLS")
+        refs_elem = vuln.find("REFERENCES")
+        if refs_elem is None:
+            refs_elem = vuln.find("LINKS")
+        if refs_elem is None:
+            refs_elem = vuln.find("URLS")
         if refs_elem is not None:
             for ref in refs_elem.findall("REFERENCE") or refs_elem.findall("LINK") or refs_elem.findall("URL"):
                 if ref.text:
@@ -212,7 +227,9 @@ class QualysParser(BaseParser):
         cwe_ids = []
         
         # Look for CWE element
-        cwe_elem = vuln.find("CWE") or vuln.find("CWE_ID")
+        cwe_elem = vuln.find("CWE")
+        if cwe_elem is None:
+            cwe_elem = vuln.find("CWE_ID")
         if cwe_elem is not None:
             cwe_text = cwe_elem.text
             if cwe_text:

@@ -1,0 +1,17 @@
+{
+  "Generated": "2026-07-05T12:00:00Z",
+  "Scan": {
+    "Target": "https://acunetix-e2e.local"
+  },
+  "Vulnerabilities": [
+    {
+      "Name": "SQL Injection",
+      "Severity": "High",
+      "Url": "https://acunetix-e2e.local/product?id=1",
+      "Classification": {"Cwe": "CWE-89"},
+      "Description": "<p>SQL injection was detected in the id parameter.</p>",
+      "Recommendation": "<p>Use parameterized queries.</p>",
+      "LookupId": "acu-e2e-0001"
+    }
+  ]
+}

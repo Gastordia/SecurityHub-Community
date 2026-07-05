@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<NessusClientData_v2>
+  <Report name="E2E Test Scan">
+    <ReportHost name="10.10.10.51">
+      <HostProperties>
+        <tag name="host-ip">10.10.10.51</tag>
+        <tag name="host-fqdn">nessus-e2e.local</tag>
+        <tag name="operating-system">Linux Kernel 5.x</tag>
+      </HostProperties>
+      <ReportItem port="443" svc_name="https" protocol="tcp" severity="3" pluginID="51192" pluginName="SSL Certificate Cannot Be Trusted" pluginFamily="General">
+        <synopsis>The SSL certificate for this service cannot be trusted.</synopsis>
+        <description>The X.509 certificate chain for this service is not signed by a recognized certificate authority.</description>
+        <solution>Purchase or generate a proper certificate for this service.</solution>
+        <cvss_base_score>7.5</cvss_base_score>
+        <cvss_vector>AV:N/AC:L/Au:N/C:P/I:N/A:N</cvss_vector>
+        <cve>CVE-2019-0000</cve>
+        <cwe>295</cwe>
+        <see_also>https://www.tenable.com/plugins/nessus/51192</see_also>
+        <plugin_output>The following certificate was found:
+|-Subject : CN=nessus-e2e.local</plugin_output>
+      </ReportItem>
+    </ReportHost>
+  </Report>
+</NessusClientData_v2>

@@ -1,0 +1,38 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "CodeQL",
+          "rules": [
+            {
+              "id": "js/sql-injection",
+              "name": "SqlInjection",
+              "shortDescription": {"text": "Database query built from user-controlled sources"},
+              "fullDescription": {"text": "Building a database query from user-controlled sources is vulnerable to insertion of malicious code."},
+              "help": {"text": "Use parameterized queries or an ORM."},
+              "properties": {"tags": ["CWE-89"], "security-severity": "8.6"}
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "js/sql-injection",
+          "level": "error",
+          "message": {"text": "This query depends on a user-provided value."},
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {"uri": "src/db/query.js"},
+                "region": {"startLine": 42, "startColumn": 5, "endLine": 42}
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

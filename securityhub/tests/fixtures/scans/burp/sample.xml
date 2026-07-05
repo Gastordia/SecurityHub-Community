@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<issues>
+  <issue>
+    <serialNumber>123456</serialNumber>
+    <type>0x00100200</type>
+    <name>Cross-site scripting (reflected)</name>
+    <host ip="10.10.10.53">https://burp-e2e.local</host>
+    <path>/search</path>
+    <location>/search?q=</location>
+    <severity>High</severity>
+    <confidence>Certain</confidence>
+    <issueBackground>&lt;p&gt;Reflected XSS occurs when data is copied from a request and echoed into the response.&lt;/p&gt;</issueBackground>
+    <remediationBackground>&lt;p&gt;Data should be validated and encoded before being echoed back.&lt;/p&gt;</remediationBackground>
+    <references>&lt;p&gt;https://portswigger.net/kb/issues/00100200&lt;/p&gt;</references>
+    <vulnerabilityClassifications>&lt;p&gt;CWE-79&lt;/p&gt;</vulnerabilityClassifications>
+  </issue>
+</issues>

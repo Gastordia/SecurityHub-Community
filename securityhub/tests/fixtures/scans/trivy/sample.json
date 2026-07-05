@@ -1,0 +1,26 @@
+{
+  "SchemaVersion": 2,
+  "ArtifactName": "e2e-test-image:latest",
+  "ArtifactType": "container_image",
+  "Results": [
+    {
+      "Target": "e2e-test-image:latest (alpine 3.18.4)",
+      "Type": "alpine",
+      "Vulnerabilities": [
+        {
+          "VulnerabilityID": "CVE-2023-9999",
+          "PkgName": "openssl",
+          "InstalledVersion": "3.1.0-r0",
+          "FixedVersion": "3.1.4-r0",
+          "Severity": "CRITICAL",
+          "Title": "openssl: buffer overflow",
+          "Description": "A buffer overflow vulnerability exists in openssl before 3.1.4.",
+          "CVSS": {
+            "nvd": {"V3Score": 9.8, "V3Vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"}
+          },
+          "References": ["https://nvd.nist.gov/vuln/detail/CVE-2023-9999"]
+        }
+      ]
+    }
+  ]
+}

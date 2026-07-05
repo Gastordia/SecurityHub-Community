@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<QUALYS_SCAN_REPORT>
+  <HOST>
+    <IP>10.10.10.55</IP>
+    <VULN_LIST>
+      <VULN>
+        <QID>38173</QID>
+        <TITLE>SSL Server Supports Weak Encryption Vulnerability</TITLE>
+        <SEVERITY>4</SEVERITY>
+        <DESCRIPTION>The remote SSL server supports weak encryption ciphers.</DESCRIPTION>
+        <SOLUTION>Disable weak ciphers in the SSL/TLS configuration.</SOLUTION>
+        <CVSS_SCORE>7.5</CVSS_SCORE>
+        <CVE_ID_LIST>
+          <CVE_ID><ID>CVE-2013-2566</ID></CVE_ID>
+        </CVE_ID_LIST>
+        <CWE><ID>327</ID></CWE>
+        <HOST>10.10.10.55</HOST>
+      </VULN>
+    </VULN_LIST>
+  </HOST>
+</QUALYS_SCAN_REPORT>

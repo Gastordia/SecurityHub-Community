@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<VulnSummary>
+  <Vulns>
+    <Vuln>
+      <AttackScore>4-High</AttackScore>
+      <VulnType>Blind SQL Injection</VulnType>
+      <Description>&lt;p&gt;Blind SQL injection detected in the query parameter.&lt;/p&gt;</Description>
+      <Recommendation>&lt;p&gt;Use parameterized queries.&lt;/p&gt;</Recommendation>
+      <VulnUrl>https://appspider-e2e.local/search?query=1</VulnUrl>
+      <CweId>89</CweId>
+      <AttackRequest>
+        <Request>GET /search?query=1' OR '1'='1 HTTP/1.1</Request>
+        <Response>HTTP/1.1 200 OK</Response>
+      </AttackRequest>
+    </Vuln>
+  </Vulns>
+</VulnSummary>

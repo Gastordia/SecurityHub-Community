@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<NexposeReport>
+  <VulnerabilityDefinitions>
+    <vulnerability id="unix-e2e-cve" title="Outdated OpenSSL Version" severity="8">
+      <description><paragraph>The remote host is running an outdated OpenSSL version vulnerable to known CVEs.</paragraph></description>
+      <solution><paragraph>Upgrade OpenSSL to the latest version.</paragraph></solution>
+      <references>
+        <reference source="CVE">CVE-2022-0001</reference>
+      </references>
+    </vulnerability>
+    <vulnerability id="noise-host" title="Host Up" severity="0">
+      <description><paragraph>Inventory noise</paragraph></description>
+    </vulnerability>
+  </VulnerabilityDefinitions>
+  <nodes>
+    <node address="10.10.10.54">
+      <tests>
+        <test id="noise-host" status="vulnerable-version" />
+      </tests>
+      <endpoints>
+        <endpoint protocol="tcp" port="443" status="open">
+          <services>
+            <service name="https">
+              <tests>
+                <test id="unix-e2e-cve" status="vulnerable-version" />
+              </tests>
+            </service>
+          </services>
+        </endpoint>
+      </endpoints>
+    </node>
+  </nodes>
+</NexposeReport>

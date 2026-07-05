@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<OWASPZAPReport version="2.14.0">
+  <site name="https://zap-e2e.local" host="zap-e2e.local" port="443" ssl="true">
+    <alerts>
+      <alertitem>
+        <pluginid>40012</pluginid>
+        <alert>Cross Site Scripting (Reflected)</alert>
+        <name>Cross Site Scripting (Reflected)</name>
+        <riskcode>3</riskcode>
+        <confidencecode>3</confidencecode>
+        <riskdesc>High (High)</riskdesc>
+        <desc>&lt;p&gt;Cross-site scripting (XSS) allows attackers to execute scripts.&lt;/p&gt;</desc>
+        <solution>&lt;p&gt;Sanitize all user input.&lt;/p&gt;</solution>
+        <reference>&lt;p&gt;https://owasp.org/www-community/attacks/xss/&lt;/p&gt;</reference>
+        <cweid>79</cweid>
+        <wascid>8</wascid>
+        <instances>
+          <instance>
+            <uri>https://zap-e2e.local/login?user=test</uri>
+            <method>GET</method>
+            <param>user</param>
+            <attack>&lt;script&gt;alert(1)&lt;/script&gt;</attack>
+            <evidence>&lt;script&gt;alert(1)&lt;/script&gt;</evidence>
+          </instance>
+        </instances>
+      </alertitem>
+    </alerts>
+  </site>
+</OWASPZAPReport>

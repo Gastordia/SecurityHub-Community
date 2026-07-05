@@ -148,7 +148,7 @@ class ZAPParser(BaseParser):
                 uri = self._text(inst, "uri") or ""
                 method = self._text(inst, "method") or ""
                 param = self._text(inst, "param") or ""
-                attack = self._text(inst, "attack") or ""
+                attack = self._clean_html(self._text(inst, "attack") or "")
                 evidence = self._clean_html(self._text(inst, "evidence") or "")
                 inst_other = self._clean_html(self._text(inst, "otherinfo") or "")
                 if uri:
