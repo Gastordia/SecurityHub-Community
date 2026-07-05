@@ -86,6 +86,9 @@ def sla_breached_findings(request):
         ('High', sla.high_days),
         ('Medium', sla.medium_days),
         ('Low', sla.low_days),
+        # 'Info' is what parsers actually store; 'Informational' kept for any
+        # pre-existing records that used the older name.
+        ('Info', sla.informational_days),
         ('Informational', sla.informational_days),
     ]
 

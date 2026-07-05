@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 BULK_ACTIONS = {'change_status', 'change_severity', 'delete'}
 
-VALID_SEVERITIES = {'Critical', 'High', 'Medium', 'Low', 'Informational'}
+# 'Info' is what parsers/SeverityLevel.INFO and the frontend actually use;
+# 'Informational' kept for any pre-existing records that used the older name.
+VALID_SEVERITIES = {'Critical', 'High', 'Medium', 'Low', 'Info', 'Informational'}
 VALID_STATUSES = {choice[0] for choice in STATUS_CHOICES}
 
 

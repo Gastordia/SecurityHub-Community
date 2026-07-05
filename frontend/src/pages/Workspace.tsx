@@ -33,10 +33,13 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'report',    label: 'Report' },
 ]
 
-const PROJECT_STATUSES = ['In Progress', 'Completed', 'Delay', 'Hold'] as const
-const VULN_STATUSES = ['Vulnerable', 'Confirm Fixed', 'Accepted Risk', 'False Positive']
+// Must match Project.PROJECT_STATUS_CHOICES in securityhub/project/models.py
+const PROJECT_STATUSES = ['Upcoming', 'In Progress', 'Delay', 'On Hold', 'Completed'] as const
+// Must match Vulnerability.STATUS_CHOICES in securityhub/project/models.py -
+// VulnerableInstance uses the same STATUS_CHOICES, so INSTANCE_STATUSES reuses this too.
+const VULN_STATUSES = ['Vulnerable', 'Confirm Fixed', 'Accepted Risk']
 const SEVERITY_ORDER: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3, Info: 4, Informational: 4, None: 4 }
-const INSTANCE_STATUSES = ['Vulnerable', 'Accepted Risk', 'False Positive', 'Resolved']
+const INSTANCE_STATUSES = VULN_STATUSES
 
 const inp = 'w-full bg-app-surface border border-border-default rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent-500 focus:ring-1 focus:ring-accent-500/30'
 
@@ -440,17 +443,24 @@ function CommentsSection({ vulnId }: { vulnId: string }) {
 
 // ── RetestsSection (used in FindingDrawer) ────────────────────────────────────
 
-const RETEST_RESULTS = ['Passed', 'Failed', 'Partial']
+// Values must match Retest.RETEST_RESULT_CHOICES in securityhub/project/models.py -
+// DRF's ChoiceField validates the stored key, not the display label.
+const RETEST_RESULTS = [
+  { value: 'fixed',            label: 'Fixed' },
+  { value: 'still_vulnerable', label: 'Still Vulnerable' },
+  { value: 'partial_fix',      label: 'Partial Fix' },
+]
+const RETEST_RESULT_LABELS: Record<string, string> = Object.fromEntries(RETEST_RESULTS.map(r => [r.value, r.label]))
 const retestColor: Record<string, string> = {
-  Passed:  'bg-low/15 text-low border border-low/30',
-  Failed:  'bg-critical/15 text-critical border border-critical/30',
-  Partial: 'bg-medium/15 text-medium border border-medium/30',
+  fixed:            'bg-low/15 text-low border border-low/30',
+  still_vulnerable: 'bg-critical/15 text-critical border border-critical/30',
+  partial_fix:      'bg-medium/15 text-medium border border-medium/30',
 }
 
 function RetestsSection({ vulnId }: { vulnId: string }) {
   const qc = useQueryClient()
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ date: '', result: 'Passed', notes: '' })
+  const [form, setForm] = useState({ date: '', result: 'fixed', notes: '' })
   const [deleteTarget, setDeleteTarget] = useState<any>(null)
   const set = (k: string) => (e: React.ChangeEvent<any>) => setForm(f => ({ ...f, [k]: e.target.value }))
 
@@ -464,7 +474,7 @@ function RetestsSection({ vulnId }: { vulnId: string }) {
     mutationFn: () => standardizedApiClient.createRetest(vulnId, form),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['retests', vulnId] })
-      setForm({ date: '', result: 'Passed', notes: '' })
+      setForm({ date: '', result: 'fixed', notes: '' })
       setShowForm(false)
       toast.success('Retest added')
     },
@@ -486,11 +496,11 @@ function RetestsSection({ vulnId }: { vulnId: string }) {
         <div className="space-y-2">
           {retests.map((rt: any) => (
             <div key={rt.id} className="flex items-start gap-3 bg-app-overlay border border-border-subtle rounded-lg px-3 py-2.5">
-              <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: rt.result === 'Passed' ? '#22c55e' : rt.result === 'Failed' ? '#ef4444' : '#eab308' }} />
+              <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: rt.result === 'fixed' ? '#22c55e' : rt.result === 'still_vulnerable' ? '#ef4444' : '#eab308' }} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-0.5">
                   <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${retestColor[rt.result] || 'bg-app-overlay text-text-muted border-border-default'}`}>
-                    {rt.result}
+                    {RETEST_RESULT_LABELS[rt.result] || rt.result}
                   </span>
                   <span className="text-xs text-text-muted">{fmt(rt.date || rt.created)}</span>
                   {rt.tester && <span className="text-xs text-text-muted">· {rt.tester}</span>}
@@ -512,7 +522,7 @@ function RetestsSection({ vulnId }: { vulnId: string }) {
             <div>
               <label className="block text-xs text-text-secondary mb-1">Result</label>
               <select value={form.result} onChange={set('result')} className={inp}>
-                {RETEST_RESULTS.map(r => <option key={r}>{r}</option>)}
+                {RETEST_RESULTS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
               </select>
             </div>
           </div>
@@ -1023,7 +1033,7 @@ function VulnRetestCard({ vuln }: { vuln: any }) {
       <div className="divide-y divide-border-subtle">
         {retests.map((rt: any) => (
           <div key={rt.id} className="flex items-center gap-3 px-4 py-2.5">
-            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${retestColor[rt.result] || 'bg-app-overlay text-text-muted border-border-default'}`}>{rt.result}</span>
+            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${retestColor[rt.result] || 'bg-app-overlay text-text-muted border-border-default'}`}>{RETEST_RESULT_LABELS[rt.result] || rt.result}</span>
             <span className="text-xs text-text-muted">{rt.date ? new Date(rt.date).toLocaleDateString() : '—'}</span>
             {rt.tester && <span className="text-xs text-text-muted">· {rt.tester}</span>}
             {rt.notes && <span className="text-xs text-text-secondary truncate">{rt.notes}</span>}
@@ -1055,11 +1065,11 @@ function RetestsTab({ projectId }: { projectId: string }) {
 
 // ── AssetsTab ─────────────────────────────────────────────────────────────────
 
+// Must match VulnerableInstance's (shared) STATUS_CHOICES in securityhub/project/models.py
 const INSTANCE_STATUS_COLORS: Record<string, string> = {
   'Vulnerable':      'bg-critical/15 text-critical border border-critical/30',
+  'Confirm Fixed':   'bg-low/15 text-low border border-low/30',
   'Accepted Risk':   'bg-medium/15 text-medium border border-medium/30',
-  'False Positive':  'bg-border-default/50 text-text-muted border border-border-default',
-  'Resolved':        'bg-low/15 text-low border border-low/30',
 }
 
 function AssetsTab({ projectId }: { projectId: string }) {

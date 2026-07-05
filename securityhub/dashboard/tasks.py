@@ -34,6 +34,11 @@ def take_daily_snapshot(project=None):
         }
         for v in open_vulns:
             sev = v.vulnerabilityseverity or 'Low'
+            # Parsers store 'Info' (SeverityLevel.INFO.value); normalize it and
+            # any legacy 'None' into the same bucket as 'Informational' rather
+            # than silently dropping the count.
+            if sev in ('Info', 'None'):
+                sev = 'Informational'
             if sev in counts:
                 counts[sev] += 1
 

@@ -19,11 +19,13 @@ import toast from 'react-hot-toast'
 
 type SettingsTab = 'webhooks' | 'sla' | 'project-types' | 'report-standards'
 
+// Must match WebhookConfig.WEBHOOK_EVENTS in securityhub/webhooks/models.py
 const WEBHOOK_EVENTS = [
-  { value: 'vulnerability.created', label: 'Vulnerability Created' },
-  { value: 'vulnerability.status_changed', label: 'Vulnerability Status Changed' },
-  { value: 'project.completed', label: 'Project Completed' },
-  { value: 'retest.created', label: 'Retest Created' },
+  { value: 'finding.created', label: 'Finding Created' },
+  { value: 'finding.status_changed', label: 'Finding Status Changed' },
+  { value: 'finding.severity_critical', label: 'Critical Finding Created' },
+  { value: 'report.generated', label: 'Report Generated' },
+  { value: 'parser.import_complete', label: 'Parser Import Complete' },
 ]
 
 function WebhookForm({

@@ -250,7 +250,7 @@ class TemplateService:
             low = vuln.filter(vulnerabilityseverity='Low', status='Vulnerable').count()
             info = vuln.filter(
                 status='Vulnerable',
-                vulnerabilityseverity__in=['Informational', 'None']
+                vulnerabilityseverity__in=['Info', 'Informational', 'None']
             ).count()
             
             # Create pie chart

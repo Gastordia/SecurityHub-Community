@@ -11,7 +11,8 @@ import { StatusBadge } from '@/components/ui/Badge'
 import { SeverityBar } from '@/components/ui/SeverityBar'
 import toast from 'react-hot-toast'
 
-const STATUS_OPTIONS = ['In Progress', 'Completed', 'Delay', 'Hold', 'On Hold']
+// Must match Project.PROJECT_STATUS_CHOICES in securityhub/project/models.py
+const STATUS_OPTIONS = ['Upcoming', 'In Progress', 'Delay', 'On Hold', 'Completed']
 
 function ProjectForm({
   initial,

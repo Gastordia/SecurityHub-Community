@@ -450,7 +450,7 @@ def GetHTML(Report_type,pk,standard,request,is_staff,access_token=None,template_
         high =  vuln.filter(project=project,vulnerabilityseverity='High',status='Vulnerable').count()
         medium =  vuln.filter(project=project,vulnerabilityseverity='Medium',status='Vulnerable').count()
         low =  vuln.filter(project=project,vulnerabilityseverity='Low',status='Vulnerable').count()
-        info = vuln.filter((Q(status='Vulnerable')) & (Q(vulnerabilityseverity='Informational') | Q(vulnerabilityseverity='None'))).count()
+        info = vuln.filter((Q(status='Vulnerable')) & (Q(vulnerabilityseverity='Info') | Q(vulnerabilityseverity='Informational') | Q(vulnerabilityseverity='None'))).count()
 
         custom_style = Style(
             colors=("#FF491C", "#F66E09", "#FBBC02", "#20B803", "#3399FF"),

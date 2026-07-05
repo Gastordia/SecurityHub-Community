@@ -34,7 +34,7 @@ class Asset(models.Model):
     @property
     def risk_score(self):
         """Weighted risk score: critical=10, high=7, medium=4, low=1."""
-        weight = {'Critical': 10, 'High': 7, 'Medium': 4, 'Low': 1, 'Informational': 0}
+        weight = {'Critical': 10, 'High': 7, 'Medium': 4, 'Low': 1, 'Info': 0, 'Informational': 0}
         total = 0
         for v in self.vulnerabilities.all():
             total += weight.get(v.vulnerabilityseverity, 0)

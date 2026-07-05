@@ -261,6 +261,9 @@ class Vulnerability(models.Model):
                 'High': policy.high_days,
                 'Medium': policy.medium_days,
                 'Low': policy.low_days,
+                # Parsers store SeverityLevel.INFO.value == 'Info'; 'Informational'
+                # is kept for any pre-existing records that used the older name.
+                'Info': policy.informational_days,
                 'Informational': policy.informational_days,
             }
             days = days_map.get(self.vulnerabilityseverity)
