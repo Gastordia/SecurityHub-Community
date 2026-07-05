@@ -518,7 +518,6 @@ def GetHTML(Report_type,pk,standard,request,is_staff,access_token=None,template_
                         report_data=data,
                         format='html',  # PDF is generated from HTML
                         validate=True,
-                        track_usage=True,
                         user=user,
                         project=project,
                         base_url=base_url

@@ -235,7 +235,7 @@ def validate_query_params(
             elif param_type == list:
                 # Handle comma-separated values
                 if isinstance(value, list):
-                    value = value
+                    pass
                 else:
                     value = [v.strip() for v in str(value).split(',')]
         except (ValueError, TypeError):
@@ -668,4 +668,3 @@ def validate_url(url: str) -> str:
         )
     
     return url
-

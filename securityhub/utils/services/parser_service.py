@@ -6,6 +6,7 @@ Enhanced with integrated asset profiling and data categorization capabilities
 import os
 import logging
 import re
+import tempfile
 from typing import Dict, Any, List, Optional, Set
 from django.core.files.uploadedfile import UploadedFile
 from django.conf import settings
@@ -14,6 +15,7 @@ from urllib.parse import urlparse
 from ..parsers.registry import ParserRegistry
 from ..parsers.models import StandardizedFinding
 from ..parsers.register_parsers import register_all_parsers
+from ..input_validation import sanitize_filename, APIValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -219,13 +221,16 @@ class ParserService:
         try:
             logger.info(f"📤 Starting file parsing for: {file.name}")
             logger.info(f"[INFO] File size: {file.size} bytes")
-            
-            # Create temporary file path for parsing
-            temp_path = os.path.join(settings.MEDIA_ROOT, 'temp', file.name)
-            os.makedirs(os.path.dirname(temp_path), exist_ok=True)
-            
+
+            safe_name = sanitize_filename(file.name)
+            temp_dir = os.path.join(settings.MEDIA_ROOT, 'temp')
+            os.makedirs(temp_dir, exist_ok=True)
+
+            _, suffix = os.path.splitext(safe_name)
+            fd, temp_path = tempfile.mkstemp(prefix='parser-upload-', suffix=suffix, dir=temp_dir)
+
             # Save uploaded file temporarily
-            with open(temp_path, 'wb+') as destination:
+            with os.fdopen(fd, 'wb+') as destination:
                 for chunk in file.chunks():
                     destination.write(chunk)
             
@@ -304,6 +309,13 @@ class ParserService:
                 }
             }
                 
+        except APIValidationError as e:
+            logger.warning(f"[WARN] Invalid uploaded filename: {str(e)}")
+            return {
+                'success': False,
+                'message': str(e),
+                'findings': []
+            }
         except Exception as e:
             logger.error(f"[ERROR] Error parsing file: {str(e)}")
             import traceback

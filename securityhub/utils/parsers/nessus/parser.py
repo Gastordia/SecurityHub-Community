@@ -972,7 +972,7 @@ class NessusParser(BaseParser):
 
     def _parse_certificate_names(self, output: str) -> List[str]:
         names = []
-        for name in re.findall(r"/CN:(.+?)(?=i/[A-Z]{1,4}:|s/[A-Z]{1,4}:|/[A-Z]{1,4}:|\n|$)", output):
+        for name in re.findall(r"/CN:(.+?)(?=i/[A-Z]{1,4}:|s/[A-Z]{1,4}:|/[A-Z]{1,4}:|\n|\Z)", output):
             cleaned = name.strip().strip(".")
             if cleaned and cleaned.lower() not in {"localhost", "localhosts"}:
                 names.append(cleaned)

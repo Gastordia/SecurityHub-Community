@@ -10,6 +10,7 @@ import json
 import logging
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 # Add the securityhub directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -162,7 +163,7 @@ class TestAcunetixParser:
         assert finding.cwe_ids == ["CWE-16"]
         assert finding.cvss_vector == "CVSS:3.0/AV:N/AC:L/PR:L/UI:R/S:U/C:H/I:N/A:N/E:H/RL:O/RC:C"
         assert finding.affected_asset == "http://php.testsparker.com/auth/login.php"
-        assert "acunetix360.com" in finding.references[0]
+        assert urlparse(finding.references[0]).hostname == "www.acunetix360.com"
         
         logger.info(f"✅ One finding JSON test passed - Found: {finding.title}")
     
