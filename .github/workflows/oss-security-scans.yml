@@ -1,0 +1,264 @@
+name: OSS Security Scans
+
+# Free, account-free security scanners that complement CodeQL/Dependabot
+# (already configured in security.yml / dependabot.yml). Every job here
+# needs zero external account, token, or signup - just a GitHub Action.
+#
+# - trivy:    dependency + container image + secret scanning
+# - gitleaks: secret scanning across full git history
+# - semgrep:  SAST with community OWASP/Django/React rulesets
+# - bandit:   Python-specific SAST (hardcoded secrets, insecure deserialization, etc.)
+# - hadolint: Dockerfile best-practice/security linting
+# - checkov:  Dockerfile misconfiguration scanning
+# - zap-baseline: DAST against the actual running docker-compose stack
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+  schedule:
+    - cron: '0 5 * * 1' # weekly, Monday 05:00 UTC
+
+permissions:
+  contents: read
+
+jobs:
+  trivy:
+    name: Trivy (dependencies + containers)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trivy filesystem scan (dependencies)
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+        env:
+          TRIVY_DISABLE_VEX_NOTICE: 'true'
+
+      - name: Upload filesystem SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+          category: 'trivy-fs'
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build API image for scanning
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile_API
+          push: false
+          load: true
+          tags: securityhub-api:trivy-scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=min
+
+      - name: Trivy image scan (API image)
+        uses: aquasecurity/trivy-action@0.29.0
+        with:
+          image-ref: 'securityhub-api:trivy-scan'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload image SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-image-results.sarif'
+          category: 'trivy-image'
+
+  gitleaks:
+    name: Gitleaks (secrets in git history)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history - gitleaks needs this to scan past commits
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  semgrep:
+    name: Semgrep (SAST)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    container:
+      image: semgrep/semgrep
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        run: |
+          semgrep scan \
+            --config p/security-audit \
+            --config p/secrets \
+            --config p/owasp-top-ten \
+            --config p/python \
+            --config p/django \
+            --config p/react \
+            --config p/typescript \
+            --sarif --output semgrep-results.sarif \
+            --error || true
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep-results.sarif
+          category: semgrep
+
+  bandit:
+    name: Bandit (Python SAST)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install Bandit
+        run: pip install --quiet "bandit[sarif]"
+
+      - name: Run Bandit
+        run: |
+          bandit -r securityhub -f sarif -o bandit-results.sarif || true
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: bandit-results.sarif
+          category: bandit
+
+  hadolint:
+    name: Hadolint (Dockerfile linting)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          - docker/Dockerfile_API
+          - docker/Dockerfile_API.dev
+          - docker/Dockerfile_frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Hadolint on ${{ matrix.dockerfile }}
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          format: sarif
+          output-file: hadolint-results.sarif
+          no-fail: true
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: hadolint-results.sarif
+          category: hadolint-${{ strategy.job-index }}
+
+  checkov:
+    name: Checkov (IaC misconfiguration)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: dockerfile
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+          soft_fail: true
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: checkov-results.sarif
+          category: checkov
+
+  zap-baseline:
+    name: OWASP ZAP baseline scan (DAST)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: |
+          echo "POSTGRES_USER=securityhub_user" >> .env
+          echo "POSTGRES_PASSWORD=test_password" >> .env
+          echo "POSTGRES_DB=securityhub" >> .env
+          echo "POSTGRES_HOST=postgres" >> .env
+          echo "POSTGRES_PORT=5432" >> .env
+          echo "REDIS_PASSWORD=test_redis_password" >> .env
+          echo "REDIS_URL=redis://:test_redis_password@redis:6379/" >> .env
+          echo "SECRET_KEY=test-secret-key-for-ci-only" >> .env
+          echo 'WHITELIST_IP=["http://127.0.0.1:8080","http://127.0.0.1:8000"]' >> .env
+          echo 'ALLOWED_HOST=["127.0.0.1","localhost","*"]' >> .env
+          echo 'CORS_ALLOWED_ORIGINS=http://127.0.0.1:8080,http://127.0.0.1:5000' >> .env
+          echo "USE_DOCKER=True" >> .env
+
+      - name: Start services
+        run: docker compose up -d --wait
+
+      - name: Wait for services to be healthy
+        run: |
+          timeout 90 bash -c 'until docker compose ps | grep -q "healthy"; do sleep 2; done'
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'https://localhost:8443'
+          cmd_options: '-I'
+          fail_action: false
+          allow_issue_writing: false
+
+      - name: Dump service logs on failure
+        if: failure()
+        run: docker compose logs securityhub postgres nginx || true
+
+      - name: Cleanup
+        if: always()
+        run: docker compose down -v
