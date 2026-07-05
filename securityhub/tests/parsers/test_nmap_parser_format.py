@@ -33,11 +33,14 @@ def test_nmap_host_description_is_not_duplicated(tmp_path):
 
     assert len(findings) == 1
     description = findings[0].description
-    assert description.count("### Host") == 1
-    assert "### Open Ports" in description
-    assert "#### 22/tcp" in description
-    assert "#### 80/tcp" in description
-    assert "#### 8000/tcp" in description
-    assert description.count("**IP Address:** 10.110.101.240") == 1
-    assert "**Script ID:** ssh-hostkey" in description
-    assert "**Script ID:** fingerprint-strings" in description
+    assert description.count("Host") == 1
+    assert "Open Ports" in description
+    assert "22/tcp" in description
+    assert "80/tcp" in description
+    assert "8000/tcp" in description
+    assert description.count("IP Address: 10.110.101.240") == 1
+    assert "Script ID: ssh-hostkey" in description
+    assert "Script ID: fingerprint-strings" in description
+    # No leftover Markdown syntax — the app has no Markdown renderer anywhere
+    assert "###" not in description
+    assert "**" not in description

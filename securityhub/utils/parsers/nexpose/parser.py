@@ -10,7 +10,6 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional
 from ...xml import parse_xml_safely as parse
 from hyperlink._url import SCHEME_PORT_MAP
-import html2text
 
 from ..base import BaseParser
 from ..models import StandardizedFinding, ParserMetadata, SeverityLevel, StandardizedEndpoint
@@ -384,7 +383,7 @@ class NexposeParser(BaseParser):
         """Create or update standardized finding"""
         if dupe_key in dupes:
             find = dupes[dupe_key]
-            dupe_text = html2text.html2text(vuln.get("pluginOutput", ""))
+            dupe_text = self.clean_html_text(vuln.get("pluginOutput", ""))
             if dupe_text not in find.description:
                 find.description += "\n\n" + dupe_text
         else:
@@ -449,10 +448,10 @@ class NexposeParser(BaseParser):
         finding = StandardizedFinding(
             title=vuln["name"],
             severity=standardized_severity,
-            description=html2text.html2text(vuln["desc"].strip())
+            description=self.clean_html_text(vuln["desc"].strip())
             + "\n\n"
-            + html2text.html2text(vuln.get("pluginOutput", "").strip()),
-            solution=html2text.html2text(vuln.get("resolution")) if vuln.get("resolution") else None,
+            + self.clean_html_text(vuln.get("pluginOutput", "").strip()),
+            solution=self.clean_html_text(vuln.get("resolution")) if vuln.get("resolution") else None,
             evidence=vuln.get("vector") or None,
             references=references,
             cwe_ids=cwe_ids,

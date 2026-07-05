@@ -164,7 +164,7 @@ class NessusParser(BaseParser):
             if plugin_output_elem is not None and plugin_output_elem.text:
                 plugin_output_text = plugin_output_elem.text
                 plugin_output = f"Plugin Output: {ip}{f':{port}' if port else ''}"
-                plugin_output += f"\n```\n{plugin_output_text}\n```\n\n"
+                plugin_output += f"\n{plugin_output_text}\n\n"
                 description += plugin_output
             
             # Determine severity

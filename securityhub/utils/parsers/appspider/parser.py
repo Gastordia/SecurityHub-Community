@@ -4,7 +4,6 @@ Parses AppSpider scan results
 """
 
 import logging
-import html2text
 from typing import List, Dict, Any, Optional
 from ...xml import parse_xml_safely as parse
 
@@ -149,8 +148,8 @@ class AppSpiderParser(BaseParser):
         standardized_severity = severity_mapping.get(severity, SeverityLevel.MEDIUM)
 
         # Clean HTML from description and mitigation
-        clean_description = html2text.html2text(description) if description else ""
-        clean_solution = html2text.html2text(mitigation) if mitigation else ""
+        clean_description = self.clean_html_text(description) if description else ""
+        clean_solution = self.clean_html_text(mitigation) if mitigation else ""
 
         # Convert CWE to list format
         cwe_ids = [f"CWE-{cwe}"] if cwe else []

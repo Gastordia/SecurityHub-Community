@@ -174,16 +174,16 @@ class AcunetixParser(BaseParser):
             
             # Clean HTML from description
             if description:
-                description = html2text.html2text(description).strip()
-            
+                description = self.clean_html_text(description)
+
             # Get additional details
             details = item.findtext("Details")
             if details and details.strip():
-                description += f"\n\n**Details:**\n{html2text.html2text(details)}"
-            
+                description += f"\n\nDetails:\n{self.clean_html_text(details)}"
+
             technical_details = item.findtext("TechnicalDetails")
             if technical_details and technical_details.strip():
-                description += f"\n\n**Technical Details:**\n{technical_details}"
+                description += f"\n\nTechnical Details:\n{technical_details}"
             
             # Get impact and solution
             impact = item.findtext("Impact") or ""
@@ -319,7 +319,8 @@ class AcunetixParser(BaseParser):
             
             text_maker = html2text.HTML2Text()
             text_maker.body_width = 0
-            
+            text_maker.ignore_emphasis = True
+
             logger.debug("AcunetixParser: Processing %s JSON vulnerabilities", len(data.get('Vulnerabilities', [])))
 
             for item in data.get("Vulnerabilities", []):

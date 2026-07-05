@@ -289,32 +289,32 @@ class NmapParser(BaseParser):
         return list(dupes.values())
 
     def _build_host_summary(self, ip: str, fqdn: Optional[str], os_info: Dict[str, str]) -> str:
-        lines = ["### Host", "", f"**IP Address:** {ip}"]
+        lines = ["Host", "", f"IP Address: {ip}"]
         if fqdn:
-            lines.append(f"**FQDN:** {fqdn}")
+            lines.append(f"FQDN: {fqdn}")
         if os_info.get("name"):
-            lines.append(f"**Host OS:** {os_info['name']}")
+            lines.append(f"Host OS: {os_info['name']}")
         if os_info.get("accuracy"):
-            lines.append(f"**Accuracy:** {os_info['accuracy']}%")
-        lines.extend(["", "### Open Ports", ""])
+            lines.append(f"Accuracy: {os_info['accuracy']}%")
+        lines.extend(["", "Open Ports", ""])
         return "\n".join(lines)
 
     def _build_port_section(self, port_num: Optional[int], protocol: str, service_element, script_elements) -> str:
-        lines = [f"#### {port_num}/{protocol}", ""]
+        lines = [f"{port_num}/{protocol}", ""]
 
         if service_element is not None:
             if product := service_element.attrib.get("product"):
-                lines.append(f"**Product:** {product}")
+                lines.append(f"Product: {product}")
             if version := service_element.attrib.get("version"):
-                lines.append(f"**Version:** {version}")
+                lines.append(f"Version: {version}")
             if extra := service_element.attrib.get("extrainfo"):
-                lines.append(f"**Extra Info:** {extra}")
+                lines.append(f"Extra Info: {extra}")
 
         for script_element in script_elements:
             if script_id := script_element.attrib.get("id"):
-                lines.append(f"**Script ID:** {script_id}")
+                lines.append(f"Script ID: {script_id}")
             if script_output := script_element.attrib.get("output"):
-                lines.append(f"**Script Output:** \n{script_output}")
+                lines.append(f"Script Output:\n{script_output}")
 
         lines.append("")
         return "\n".join(lines)
@@ -331,17 +331,16 @@ class NmapParser(BaseParser):
                         vuln_attributes[elem.attrib["key"].lower()] = elem.text
 
                     vuln_id = vuln_attributes.get("id", "unknown")
-                    description = "### Vulnerability\n\n"
-                    description += "**ID**: `" + str(vuln_id) + "`\n"
-                    description += "**CPE**: " + str(component_cpe) + "\n"
-                    
+                    description = "Vulnerability\n\n"
+                    description += "ID: " + str(vuln_id) + "\n"
+                    description += "CPE: " + str(component_cpe) + "\n"
+
                     for attribute in vuln_attributes:
                         description += (
-                            "**"
-                            + attribute
-                            + "**: `"
+                            attribute
+                            + ": "
                             + vuln_attributes[attribute]
-                            + "`\n"
+                            + "\n"
                         )
                     
                     # Determine severity from CVSS score

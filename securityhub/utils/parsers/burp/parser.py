@@ -6,7 +6,6 @@ Parses Burp Suite XML scan results
 import base64
 import logging
 import re
-import html2text
 from typing import List, Dict, Any, Optional
 from ...xml import parse_xml_safely as parse
 
@@ -201,35 +200,31 @@ class BurpParser(BaseParser):
                             + ". "
                         )
 
-            # Clean HTML content
-            text_maker = html2text.HTML2Text()
-            text_maker.body_width = 0
-
             # Extract and clean background
             background = self._do_clean(node.findall("issueBackground"))
             if background:
-                background = text_maker.handle(background)
+                background = self.clean_html_text(background)
 
             # Extract and clean detail
             detail = self._do_clean(node.findall("issueDetail"))
             if detail:
-                detail = text_maker.handle(detail)
+                detail = self.clean_html_text(detail)
                 if collab_text:
-                    detail = text_maker.handle(detail + "<p>" + collab_text + "</p>")
+                    detail = self.clean_html_text(detail + "<p>" + collab_text + "</p>")
 
             # Extract and clean remediation
             remediation = self._do_clean(node.findall("remediationBackground"))
             if remediation:
-                remediation = text_maker.handle(remediation)
+                remediation = self.clean_html_text(remediation)
 
             remediation_detail = self._do_clean(node.findall("remediationDetail"))
             if remediation_detail:
-                remediation = text_maker.handle(remediation_detail + "\n") + remediation
+                remediation = self.clean_html_text(remediation_detail + "\n") + remediation
 
             # Extract and clean references
             references = self._do_clean(node.findall("references"))
             if references:
-                references = text_maker.handle(references)
+                references = self.clean_html_text(references)
 
             # Extract severity
             severity_elem = node.find("severity")

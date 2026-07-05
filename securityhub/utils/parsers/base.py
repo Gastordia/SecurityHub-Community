@@ -147,6 +147,7 @@ class BaseParser(ABC):
             import html2text
             text_maker = html2text.HTML2Text()
             text_maker.body_width = 0
+            text_maker.ignore_emphasis = True
             return text_maker.handle(html_text).strip()
         except ImportError:
             # Fallback to basic HTML cleaning

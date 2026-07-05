@@ -296,7 +296,7 @@ class SARIFParser(BaseParser):
 
         snippet = (region.get("snippet") or {}).get("text", "")
         if snippet:
-            parts.append(f"Snippet:\n```\n{snippet.strip()}\n```")
+            parts.append(f"Snippet:\n{snippet.strip()}")
 
         # Logical location (function/class name)
         for ll in location.get("logicalLocations", []):
