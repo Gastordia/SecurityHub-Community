@@ -37,14 +37,22 @@ jobs:
 
       - name: Get version
         id: version
+        env:
+          # Passed through env instead of interpolated directly into the script
+          # (Semgrep run-shell-injection): ${{ }} is plain text substitution at
+          # the YAML level, before the shell ever runs, so a value containing
+          # shell metacharacters would execute as commands rather than data.
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_VERSION: ${{ github.event.inputs.version }}
         run: |
-          if [ "${{ github.event_name }}" == "release" ]; then
-            VERSION=${{ github.event.release.tag_name }}
+          if [ "$EVENT_NAME" == "release" ]; then
+            VERSION="$RELEASE_TAG"
           else
-            VERSION=${{ github.event.inputs.version }}
+            VERSION="$INPUT_VERSION"
           fi
           VERSION=${VERSION#v}
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Version: ${VERSION}"
 
       - name: Build and push API image

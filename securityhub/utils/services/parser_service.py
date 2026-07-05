@@ -548,7 +548,7 @@ class ParserService:
                         results['updated_count'] += 1
                         
                 except Exception as e:
-                    error_msg = f"Failed to update profile for asset {asset.get('asset_id')}: {str(e)}"
+                    error_msg = f"Failed to update profile for asset {asset.get('asset_id')}: {str(e)}"  # nosec B608 - log message, not SQL; "update" is coincidental
                     logger.error(f"[ERROR] {error_msg}")
                     results['errors'].append(error_msg)
             

@@ -1,6 +1,6 @@
 import os
 import secrets
-import subprocess
+import subprocess  # nosec B404 - only used below for fixed, non-shell GTK3 detection commands
 import re
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
@@ -202,7 +202,7 @@ class Command(BaseCommand):
         found = False
         for check_cmd in checks:
             try:
-                subprocess.run(
+                subprocess.run(  # nosec B603 - fixed argv list from `checks` above, no shell, no user input
                     check_cmd,
                     capture_output=True,
                     text=True,

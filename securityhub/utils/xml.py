@@ -1,6 +1,9 @@
 import logging
 from defusedxml import ElementTree as safe_ET
-from xml.etree.ElementTree import ParseError
+# nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
+# Only importing the ParseError exception type, not xml.etree's parser -
+# actual parsing always goes through defusedxml.ElementTree above.
+from xml.etree.ElementTree import ParseError  # nosec B405 - exception type only, not the parser
 
 logger = logging.getLogger(__name__)
 

@@ -26,5 +26,5 @@ def clean_html(value):
     if not isinstance(value, str):
         value = str(value)
     cleaned_html = bleach.clean(value, tags=ALLOWED_TAGS, attributes=HTML_ATTRIBUTE,css_sanitizer=css_sanitizer)
-    return SafeString(cleaned_html)
+    return SafeString(cleaned_html)  # nosec B703 - wrapping bleach.clean()'s own output, not raw input
     #return SafeString(value)

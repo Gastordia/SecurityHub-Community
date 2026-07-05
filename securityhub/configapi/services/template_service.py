@@ -373,7 +373,9 @@ class TemplateService:
         """Generate cache key for template rendering"""
         # Create hash of context to ensure cache key uniqueness
         context_str = json.dumps(context, sort_keys=True, default=str)
-        context_hash = hashlib.md5(context_str.encode()).hexdigest()[:8]
+        # sha256 (not md5) purely to keep this off Bandit's weak-hash list -
+        # this is a cache key, not a security boundary.
+        context_hash = hashlib.sha256(context_str.encode()).hexdigest()[:8]
         return f'template:render:{template_id}:{format}:{context_hash}'
     
     def _track_usage(

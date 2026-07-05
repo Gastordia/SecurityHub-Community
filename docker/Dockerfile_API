@@ -27,7 +27,12 @@ ENV TZ=UTC \
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Runtime-only packages — no build-essential, python3-dev, or *-dev headers
+# `apt-get upgrade` patches OS packages already baked into the base image
+# (glibc, tar, ncurses, util-linux, ...) - `apt-get install` alone only
+# affects packages listed below, leaving everything else at whatever
+# version ubuntu:22.04 shipped with when it was last published.
 RUN apt-get update -qq && \
+    apt-get upgrade -y -qq && \
     apt-get install -y --no-install-recommends \
         tzdata \
         locales \
@@ -68,6 +73,7 @@ FROM base AS builder
 
 # Build-only deps in their own layer — never copied to the production image
 RUN apt-get update -qq && \
+    apt-get upgrade -y -qq && \
     apt-get install -y --no-install-recommends \
         build-essential \
         python3-dev \
