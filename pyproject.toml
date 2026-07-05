@@ -9,7 +9,7 @@ authors = [
 ]
 license = { text = "SecurityHub Licence" }
 dependencies = [
-    "django==4.2.30",
+    "django==5.2.15",
     "djangorestframework==3.15.2",
     "gunicorn==23.0.0",
     "pillow==12.3.0",
@@ -22,7 +22,7 @@ dependencies = [
     "colorlog==6.7.0",
     "django-filter==23.5",
     "python-dotenv==1.2.2",
-    "weasyprint>=68.0,<69.0",
+    "weasyprint>=69.0,<70.0",
     "pydyf>=0.10.0,<0.12.0",
     "pygal==3.0.4",
     "bleach[css]>=6.4.0,<7.0.0",
@@ -64,7 +64,7 @@ intelligence-tests = [
     "httpretty>=1.1.4,<2.0.0",
     "pytest-benchmark>=4.0.0,<5.0.0",
     "flake8>=6.0.0,<7.0.0",
-    "black>=23.0.0,<24.0.0",
+    "black>=26.3.1,<27.0.0",
     "isort>=5.12.0,<6.0.0",
     "factory-boy>=3.2.0,<4.0.0",
     "faker>=18.0.0,<19.0.0",
