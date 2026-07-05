@@ -385,7 +385,7 @@ def project_scope_edit(request, id, scope_id):
             # Store scope details for audit before deletion
             deleted_scope = {
                 'id': projectscope.id,
-                'scope_entry': projectscope.scope_entry,
+                'scope': projectscope.scope,
                 'project_id': projectscope.project.id
             }
             

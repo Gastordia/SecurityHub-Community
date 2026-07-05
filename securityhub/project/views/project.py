@@ -7,6 +7,7 @@ from rest_framework_simplejwt.tokens import AccessToken
 from datetime import timedelta
 from rest_framework import status
 from rest_framework.decorators import (api_view, permission_classes, throttle_classes)
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated  # Keep for non-RBAC endpoints only
 from rest_framework.response import Response
 from django.db.models import Q
@@ -232,22 +233,24 @@ class GetAllProjects(TenantScopedAPIView):
         try:
             org_id = None
             serializer = ProjectSerializer(data=request.data, context={'request': request})
-            if serializer.is_valid(raise_exception=True):
-                project = serializer.save()
+            serializer.is_valid(raise_exception=True)
+            project = serializer.save()
 
-                AuditLogger.log_operation(
-                    user=request.user,
-                    action='PROJECT_CREATED',
-                    resource_type='Project',
-                    resource_id=project.id,
-                    org_id=org_id,
-                    request=request,
-                    details={'name': project.name, 'status': project.status}
-                )
-                log_view_success('GetAllProjects.post', request, {'project_id': project.id}, start_ctx['start_time'])
-                return Response(serializer.data, status=status.HTTP_201_CREATED)
-            else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            AuditLogger.log_operation(
+                user=request.user,
+                action='PROJECT_CREATED',
+                resource_type='Project',
+                resource_id=project.id,
+                org_id=org_id,
+                request=request,
+                details={'name': project.name, 'status': project.status}
+            )
+            log_view_success('GetAllProjects.post', request, {'project_id': project.id}, start_ctx['start_time'])
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except ValidationError as e:
+            log_view_error('GetAllProjects.post', request, e, {'errors': e.detail})
+            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
             log_view_error('GetAllProjects.post', request, e)
