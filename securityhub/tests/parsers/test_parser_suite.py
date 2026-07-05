@@ -42,7 +42,9 @@ def ok(msg):    print(f"  {GREEN}\u2705 {msg}{RESET}")
 def fail(msg):  print(f"  {RED}\u274c {msg}{RESET}")
 def warn(msg):  print(f"  {YELLOW}\u26a0\ufe0f  {msg}{RESET}")
 def info(msg):  print(f"  {CYAN}\u2139\ufe0f  {msg}{RESET}")
-def head(msg):  print(f"\n{BOLD}{CYAN}{'\u2501'*70}{RESET}\n{BOLD}{msg}{RESET}")
+def head(msg):
+    bar = '\u2501' * 70
+    print(f"\n{BOLD}{CYAN}{bar}{RESET}\n{BOLD}{msg}{RESET}")
 def subhead(m): print(f"\n{BOLD}  \u2500\u2500 {m} \u2500\u2500{RESET}")
 
 # ── Watchdog config ────────────────────────────────────────────────────────────
