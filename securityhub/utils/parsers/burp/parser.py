@@ -278,13 +278,25 @@ class BurpParser(BaseParser):
             # Convert severity
             severity_level = self._convert_severity(severity_text)
 
+            # issueBackground holds the general "what is this vulnerability" writeup;
+            # issueDetail (often absent in real Burp exports) holds instance-specific notes.
+            description = background or ""
+            if detail:
+                description = f"{description}\n\n{detail}".strip() if description else detail
+            if not description:
+                description = f"URL: {url_host}{path_text}"
+
+            evidence = f"URL: {url_host}{path_text}"
+            if detail and background:
+                evidence = f"{evidence}\n\n{detail}"
+
             # Create standardized finding
             finding = StandardizedFinding(
                 title=name_text,
                 severity=severity_level,
-                description=f"URL: {url_host}{path_text}\n\n{detail}\n",
+                description=description,
                 solution=remediation,
-                evidence=background,
+                evidence=evidence,
                 references=[references] if references else [],
                 cwe_ids=cwe_ids,
                 affected_asset=url or f"{url_host}{path_text}",

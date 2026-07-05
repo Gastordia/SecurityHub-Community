@@ -135,6 +135,7 @@ def upload_project_parser_file(request, project_id):
                         vulnerabilityreferlnk=finding.get('references', [''])[0] if finding.get('references') else '',
                         cwe=finding.get('cwe_ids', []),
                         cve=cve_ids,
+                        POC=finding.get('evidence') or None,
                         status='Vulnerable',
                         created_by=request.user,
                         last_updated_by=request.user,
