@@ -154,7 +154,9 @@ CACHES = {
 # ============================================================================
 # Static Files (Disable WhiteNoise in Tests)
 # ============================================================================
-STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+STORAGES['staticfiles'] = {
+    'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+}
 
 # ============================================================================
 # Debug Settings
@@ -215,5 +217,4 @@ print(f"CORS Allow All: {CORS_ORIGIN_ALLOW_ALL}")
 print(f"CORS Allowed Origins: {len(CORS_ALLOWED_ORIGINS)} origins")
 print(f"Logging: Console only (no file handlers)")
 print("=" * 80)
-
 

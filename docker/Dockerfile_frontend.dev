@@ -3,7 +3,7 @@
 # Dev image — source is bind-mounted at runtime.
 # Hot-reload via Vite dev server.  Do NOT use in production.
 # ============================================================================
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
