@@ -20,7 +20,7 @@ jobs:
       POSTGRES_HOST: localhost
       POSTGRES_DB: securityhub
       POSTGRES_PORT: 5432
-      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      SECRET_KEY: ${{ secrets.SECRET_KEY || 'ci-test-secret-key-not-for-production-use' }}
       REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD || 'test-redis-password' }}
     
     services:
