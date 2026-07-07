@@ -1,5 +1,5 @@
 [![CI](https://github.com/Gastordia/SecurityHub-Community/actions/workflows/ci.yml/badge.svg)](https://github.com/Gastordia/SecurityHub-Community/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](LICENSE.md)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://www.docker.com/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue)](pyproject.toml)
 [![React](https://img.shields.io/badge/Frontend-React%20%2B%20TypeScript-61DAFB)](frontend)
@@ -154,4 +154,4 @@ New parsers, bug fixes with a test attached, documentation corrections, and repo
 
 ## License
 
-MIT — see [LICENSE.md](LICENSE.md).
+AGPL-3.0-or-later — see [LICENSE.md](LICENSE.md). Running a modified version of this software as a network service (e.g. hosting it for others) requires making your source changes available to users of that service — the license's network-use clause.
