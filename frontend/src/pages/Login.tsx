@@ -113,7 +113,7 @@ export default function LoginPage() {
         </div>
 
         {/* Footer note */}
-        <p className="text-xs text-text-muted mt-auto">MIT licensed. Self-hosted.</p>
+        <p className="text-xs text-text-muted mt-auto">AGPL-3.0 licensed. Self-hosted.</p>
       </div>
 
       {/* ── Right panel ── */}

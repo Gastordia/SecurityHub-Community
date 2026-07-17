@@ -1,7 +1,7 @@
 [project]
 name = "securityhub"
 version = "1.0.0"
-description = "SecurityHub is a Python and Django-based enterprise vulnerability management platform designed for penetration testers and security organizations. It streamlines report generation by enabling users to create PDF and Excel reports directly, and provides a systematic way to monitor and manage vulnerabilities within various projects."
+description = "SecurityHub is a Python and Django-based enterprise vulnerability management platform designed for penetration testers and security organizations. It streamlines report generation by enabling users to create PDF and DOCX reports directly, and provides a systematic way to monitor and manage vulnerabilities within various projects."
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
 authors = [

@@ -281,7 +281,7 @@ def CheckReport(Report_format,Report_type,pk,url,standard,request,access_token,i
     Generate report with optional template support.
 
     Args:
-        Report_format: Format of report (pdf, docx, excel)
+        Report_format: Format of report (pdf, docx) — anything else returns a 400
         Report_type: Type of report (Audit, Re-Audit)
         pk: Project ID
         url: Base URL

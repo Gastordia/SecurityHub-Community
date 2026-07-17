@@ -1,42 +1,19 @@
-
 ## What is this?
 
-`securityhub-react` is a React front end for SecurityHub.
-
-Written in TypeScript, this app uses no server resources except to deliver the JavaScript bundle. The back end relies on the SecurityHub API.
+The React frontend for SecurityHub — a TypeScript SPA built with Vite. It talks to the Django API and doesn't need any server-side rendering; in production it's served as static files by Nginx.
 
 ## Installation
 
-`npm install`
+```bash
+npm install
+```
 
-Note that this will also install a custom build of CK Editor in the `/packages/ckeditor` director
-
-There is a file called `env.example` in the root of the project that you will need to customize. Copy it to `.env` or `.env.local` and add the API url.
+Copy `env.example` to `.env` and set `VITE_APP_API_URL` to point at your backend.
 
 ## Available Scripts
 
-In the project directory, you can run:
+`npm start` — runs the Vite dev server at [http://localhost:5173](http://localhost:5173) with hot module reload.
 
-`npm start`
+`npm test` — runs the test suite once with Vitest (`npm run test:watch` for watch mode, `npm run test:coverage` for a coverage report). Tests live under `tests/`; `tests/setup.ts` wires up `@testing-library/jest-dom` and a few DOM API mocks (`matchMedia`, `IntersectionObserver`, `ResizeObserver`) that components rely on but jsdom doesn't implement.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
-
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
-
-`npm test`
-
-Launches the test runner in the interactive watch mode.\
-
-
-`npm run build`
-
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
-
-See the docs about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
+`npm run build` — type-checks with `tsc`, then builds the production bundle to `dist/` (not `build/` — that's a Create React App convention, this project uses Vite).

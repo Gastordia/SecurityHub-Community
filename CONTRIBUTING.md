@@ -39,9 +39,13 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 
 #### Backend Setup
 
-1. **Open the project directory**
+Run all of these from the repository root — `pyproject.toml`/`uv.lock` live there, and `manage.py` is addressed as `securityhub/manage.py` throughout, not from inside the `securityhub/` package directory.
+
+1. **Configure environment variables**
    ```bash
-   cd securityhub
+   cp env.example .env
+   # Edit .env with your configuration including PostgreSQL and Redis details
+   # Refer to the installation documentation page for detailed environment configuration
    ```
 
 2. **Install backend dependencies with uv**
@@ -49,11 +53,9 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
    uv sync
    ```
 
-3. **Configure environment variables**
+3. **Apply database migrations**
    ```bash
-   cp env.example .env
-   # Edit .env with your configuration including PostgreSQL and Redis details
-   # Refer to the installation documentation page for detailed environment configuration
+   uv run python securityhub/manage.py migrate
    ```
 
 4. **First-time setup (initializes accounts, permissions, migrations, etc.)**

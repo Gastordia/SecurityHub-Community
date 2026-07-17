@@ -45,6 +45,8 @@
     ]
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.4.2",
+    "@testing-library/react": "^14.2.1",
     "@vitest/ui": "^4.1.9",
     "autoprefixer": "^10.4.17",
     "jsdom": "^24.0.0",
