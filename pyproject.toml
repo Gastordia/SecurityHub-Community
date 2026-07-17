@@ -16,7 +16,7 @@ dependencies = [
     "pytz==2022.6",
     "sqlparse==0.5.5",
     "tzdata>=2024.1,<2025.0",
-    "django-cors-headers==3.13.0",
+    "django-cors-headers==4.9.0",
     "djangorestframework-simplejwt==5.5.1",
     "pyjwt==2.13.0",
     "colorlog==6.7.0",
