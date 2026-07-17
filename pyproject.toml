@@ -22,7 +22,7 @@ dependencies = [
     "colorlog==6.7.0",
     "django-filter==23.5",
     "python-dotenv==1.2.2",
-    "weasyprint>=68.0,<69.0",
+    "weasyprint>=69.0,<70.0",
     "pydyf>=0.10.0,<0.12.0",
     "pygal==3.0.4",
     "bleach[css]>=6.4.0,<7.0.0",
